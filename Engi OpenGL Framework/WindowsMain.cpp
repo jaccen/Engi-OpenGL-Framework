@@ -18,21 +18,32 @@
 //      along with this program.  If not, see <http://www.gnu.org/licenses/>	//
 //------------------------------------------------------------------------------//
 
+#if defined(_WIN32) || defined(__WIN32__) || defined(_MSC_VER)
+	int x;
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+#include <vector>
+#include <string>
 
 // TODO: configuration file
 #define WIDTH 800
 #define HEIGHT 600
 
+// Windows functions
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 HWND InitializeWindow();
+
+extern void MainLoop();
 
 static HWND hWindow;
 static HINSTANCE hInstance;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	// TODO: add console if --debug 
+
 	hWindow = InitializeWindow();
 	ShowWindow(hWindow, nCmdShow);
 	SetForegroundWindow(hWindow);
@@ -51,7 +62,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		else
 		{
-
+			MainLoop();
 		}
 	}
 	UnregisterClass("Engi OpenGL Framework", hInstance);
@@ -128,7 +139,7 @@ HWND InitializeWindow()
 	AdjustWindowRectEx(&WindowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_APPWINDOW | WS_EX_WINDOWEDGE);
 	if (!(hwnd=CreateWindowEx(
 		WS_EX_APPWINDOW | WS_EX_WINDOWEDGE,
-		"OpenGL",
+		"Engi OpenGL Framework",
 		"Engi OpenGL Framework",
 		WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_OVERLAPPEDWINDOW,
 		// Creates window on the center of the screen
@@ -147,3 +158,5 @@ HWND InitializeWindow()
 
 	return hwnd;
 }
+
+#endif
