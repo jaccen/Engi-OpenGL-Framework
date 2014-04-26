@@ -1,30 +1,20 @@
 Engi OpenGL Framework
 =====================
 
-<b>Description</b>
+<b>Description</b><br/>
+  The goal of this project is to create an easy-to-use and learn OpenGL framework to create hardware accelerated 3D applications.<br/>
+  I work on this project when I have free time and feel in the right mood.<br/>
 
-  A project of mine, which I work on when I have free time and feel in the right mood.
+<b>Scope</b><br/>
+  This IS a framework to develop applications using OpenGL, for example games.<br/>
+  This IS NOT a useful application in it's native state.<br/>
+  Currently, this is NOT cross-platform, however the code was designed to be very portable.<br/>
 
+<b>Supported Platforms</b><br/>
+- Microsoft Windows<br/>
 
+<b>Supported features</b><br/>
+<br/>
 
-<b>Scope</b>
-
-  This IS a framework to develop applications using OpenGL, for example games.
-  This IS NOT a useful application in it's native state.
-  Currently, this is NOT cross-platform, however the code was designed to be very portable.
-
-
-
-<b>Supported Platforms</b>
-- Microsoft Windows
-
-
-
-
-<b>Supported features</b>
-
-
-
-
-
-<b>Planned features</b>
+<b>Planned features</b><br/>
+<br/>
