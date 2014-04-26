@@ -64,11 +64,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="KeyboardClient.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="MainLoop.cpp" />
     <ClCompile Include="WindowsMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Utility.h" />
   </ItemGroup>

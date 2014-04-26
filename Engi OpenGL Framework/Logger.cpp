@@ -39,9 +39,9 @@ Logger::~Logger()
 	SafeDelete(m);
 }
 
-void Logger::LogInformation(const std::string data)
+void Logger::Log(const std::string data)
 {
 	m->lock();
-	*file << data;
+	*file << data << endl;
 	m->unlock();
 }

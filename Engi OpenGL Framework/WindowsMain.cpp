@@ -19,13 +19,23 @@
 //------------------------------------------------------------------------------//
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(_MSC_VER)
-	int x;
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include <vector>
-#include <string>
+#include <consoleapi.h>
+#include <fcntl.h>
+#include <io.h>
+
+#include "Keyboard.h"
+#include "Logger.h"
+#include "Utility.h"
+
+using namespace Keyboard;
+
+extern void Init(KeyboardServer *kbds, Logger *logger);
+extern void Loop();
+extern void Exit();
 
 // TODO: configuration file
 #define WIDTH 800
@@ -35,37 +45,58 @@
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 HWND InitializeWindow();
 
-extern void MainLoop();
-
 static HWND hWindow;
 static HINSTANCE hInstance;
 
+static KeyboardServer *kbds = new KeyboardServer(10);
+static Logger *logger = new Logger(".\\out.log");
+
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	// TODO: add console if --debug 
+#ifdef _DEBUG // Console is allocated in debug configuration
+	AllocConsole();
+	HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
+	int hCrt = _open_osfhandle((long) handle_out, _O_TEXT);
+	FILE* hf_out = _fdopen(hCrt, "w");
+	setvbuf(hf_out, NULL, _IONBF, 1);
+	*stdout = *hf_out;
+#endif
 
 	hWindow = InitializeWindow();
+	if (!hWindow) return EXIT_FAILURE;
+
+	Init(kbds, logger);
 	ShowWindow(hWindow, nCmdShow);
 	SetForegroundWindow(hWindow);
 	SetFocus(hWindow);
 
 	MSG msg;
-	ZeroMemory(&msg, sizeof(MSG));
-	int x = 0;
+	ZeroMemory(&msg, sizeof(msg));
+
 	while (msg.message != WM_QUIT)
 	{
 		// Handles window's messages, they contain keypresses, mouse movement and window updates
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
 		else
 		{
-			MainLoop();
+			Loop();
+			kbds->UpdateState();
 		}
 	}
+	Exit();
+
+	SafeDelete(logger);
+	SafeDelete(kbds);
 	UnregisterClass("Engi OpenGL Framework", hInstance);
+
+#ifdef _DEBUG
+	fclose(hf_out);
+#endif
 
 	return msg.wParam;
 }
@@ -80,10 +111,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 	case WM_KEYDOWN: // Windows message for KEYDOWN events
 	{
+		// Disables auto-repeat
+		if (!(lParam & 0x40000000))
+		{
+			kbds->OnKeyDown(wParam);
+		}
 		return 0;
 	}
 	case WM_KEYUP: // Windows message for KEYUP events
 	{
+		kbds->OnKeyUp(wParam);
 		return 0;
 	}
 	case WM_SIZE: // Windows message to resize a window
@@ -111,8 +148,6 @@ HWND InitializeWindow()
 	hInstance			= GetModuleHandle(NULL);
 
 	WNDCLASS wc;
-	DWORD dwExStyle;
-
 	wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;	// Redraws window when it moves
 	wc.lpfnWndProc		= (WNDPROC) WndProc;					// Pointer to our message handling function
 	wc.cbClsExtra		= 0;									// Not used
@@ -126,6 +161,7 @@ HWND InitializeWindow()
 
 	if (!RegisterClass(&wc))
 	{
+		logger->Log("Failed to register window class");
 		return nullptr;
 	}
 
@@ -153,9 +189,11 @@ HWND InitializeWindow()
 		hInstance,
 		nullptr)))
 	{
+		logger->Log("Failed to create window");
 		return nullptr;
 	}
 
+	logger->Log("Create window OK");
 	return hwnd;
 }
 

@@ -24,6 +24,7 @@
 #include <string>
 #include <mutex>
 
+// Thread-safe logger
 class Logger
 {
 private:
@@ -33,5 +34,5 @@ protected:
 public:
 	Logger(const std::string file, bool append = false);
 	~Logger();
-	void LogInformation(const std::string data);
+	void Log(const std::string data);
 };

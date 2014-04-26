@@ -18,7 +18,43 @@
 //      along with this program.  If not, see <http://www.gnu.org/licenses/>	//
 //------------------------------------------------------------------------------//
 
-void MainLoop()
+#include "Logger.h"
+#include "Keyboard.h"
+#include "Utility.h"
+
+using namespace std;
+using namespace Keyboard;
+static KeyboardClient *kbdc = nullptr;
+static Logger *logger = nullptr;
+
+void Init(KeyboardServer *kbds, Logger* _logger)
 {
-	// TODO: your code here
+	// TODO: Initialization code here
+	kbdc = new KeyboardClient(*kbds);
+	logger = _logger;
+}
+
+void Loop()
+{
+	// TODO: Main loop code here
+	switch (kbdc->GetState('A'))
+	{
+	case NOT_PRESSED:
+		break;
+	case KEY_DOWN:
+		printf("'A' is KEY_DOWN!\n");
+		break;
+	case PRESSED:
+		printf("'A' is PRESSED!\n");
+		break;
+	case KEY_UP:
+		printf("'A' is KEY_UP!\n");
+		break;
+	}
+}
+
+void Exit()
+{
+	// TODO: Cleanup code here
+	SafeDelete(kbdc);
 }
