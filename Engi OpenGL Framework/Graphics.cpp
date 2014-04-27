@@ -23,7 +23,7 @@
 
 extern Logger *gpLogger;
 
-Graphics::Graphics(HWND hwnd, unsigned width, unsigned height) : width(width), height(height)
+Graphics::Graphics(HWND hwnd, unsigned width, unsigned height) : width(width), height(height), aspect((float) width / (float) height)
 {
     PIXELFORMATDESCRIPTOR pfd = {
         sizeof(PIXELFORMATDESCRIPTOR),	// Size Of This Pixel Format Descriptor
@@ -92,16 +92,26 @@ Graphics::~Graphics()
     }
 }
 
+void Graphics::ChangeResolution(unsigned width, unsigned height)
+{
+    this->width = width;
+    this->height = height;
+
+    aspect = (float) width / (float) height;
+
+    glViewport(0, 0, width, height);
+}
+
 void Graphics::BeginFrame()
 {
     // Clears the buffer to black color
-    glClearColor(0.2f, 0.2f, 0.5f, 0.0f);
+    glClearColor(0.2f, 0.1f, 0.3f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Sets projection matrix to render from vertexes
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     // Target view
-    gluPerspective(45, 4.0f / 3.0f, 0.1, 5);
+    gluPerspective(45, aspect, 0.1, 5);
     gluLookAt(0,0,2,0,0,0,0,1,0);
 }
 

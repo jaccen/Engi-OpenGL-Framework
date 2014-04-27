@@ -43,6 +43,7 @@ private:
 
     unsigned width;
     unsigned height;
+    float aspect;
 
 public:
     // Constructor & destructor
@@ -50,6 +51,8 @@ public:
     Graphics(HWND hwnd, unsigned width, unsigned height);
     #endif
     ~Graphics();
+
+    void ChangeResolution(unsigned width, unsigned height);
 
     void BeginFrame();
     void EndFrame();

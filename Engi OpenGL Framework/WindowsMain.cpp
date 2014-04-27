@@ -50,8 +50,8 @@ extern void Loop();
 extern void Exit();
 
 // TODO: configuration file
-#define WIDTH 800                                               // Client area width in pixels
-#define HEIGHT 600                                              // Client area height in pixels
+#define WIDTH 640                                               // Client area width in pixels
+#define HEIGHT 480                                              // Client area height in pixels
 #define FPS 60                                                  // Target FPS
 
 // Windows functions
@@ -154,6 +154,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
     case WM_SIZE: // Windows message to resize a window
     {
+        if (gfx) // Resize is called before we initialize the graphics, this will prevent undefined behavior
+        {
+            gfx->ChangeResolution(lParam & 0x0000FFFF, lParam >> 16);
+        }
         break;
     }
     #pragma endregion
