@@ -36,3 +36,5 @@ public:
     ~Logger();
     void Log(const std::string data);
 };
+
+static Logger *gpLogger = new Logger(".\\out.log");             // Log file

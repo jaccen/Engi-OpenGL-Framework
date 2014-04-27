@@ -18,7 +18,7 @@
 //      along with this program.  If not, see <http://www.gnu.org/licenses/>    //
 //------------------------------------------------------------------------------//
 
-#if defined(_WIN32) || defined(__WIN32__) || defined(_MSC_VER)
+#ifdef _WIN32
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -31,57 +31,65 @@
 #include <io.h>
 #endif
 
+// Utilities
 #include "Timer.h"
-#include "Keyboard.h"
-#include "Mouse.h"
 #include "Logger.h"
 #include "Utility.h"
+// Input
+#include "Keyboard.h"
+#include "Mouse.h"
+// Graphics
+#include "Graphics.h"
 
 using namespace Keyboard;
 using namespace Mouse;
 
 // Framework methods
-extern void Init(KeyboardServer *kbds, MouseServer *ms, Logger *logger);
+extern void Init(Graphics*, KeyboardServer*, MouseServer*);
 extern void Loop();
 extern void Exit();
 
 // TODO: configuration file
-#define WIDTH 800
-#define HEIGHT 600
-#define FPS 60
+#define WIDTH 800                                               // Client area width in pixels
+#define HEIGHT 600                                              // Client area height in pixels
+#define FPS 60                                                  // Target FPS
 
 // Windows functions
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-HWND InitializeWindow();
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);           // Defines how each message will be processed
+HWND InitializeWindow();                                        // Creates a window for the application
 
-static HWND hWindow;
-static HINSTANCE hInstance;
+static HWND hWindow;                                            // Handle to window
+static HINSTANCE hInstance;                                     // Handle to instance
 
-static KeyboardServer *kbds = new KeyboardServer(10);
-static MouseServer *ms = new MouseServer();
-static Logger *logger = new Logger(".\\out.log");
-static Timer *timer = new Timer();
+static Graphics *gfx = nullptr;
+static KeyboardServer *kbds = new KeyboardServer(10);           // Keyboard server contains the state of the keys in a virtual keyboard
+static MouseServer *ms = new MouseServer();                     // Mouse server contains the state of the buttons in a virtual mouse
+static Timer *timer = new Timer();                              // High precision timer with nanosecond precision
 
-static unsigned frame_duration_us = (1000000 / FPS);
+static unsigned frame_duration_us = (1000000 / FPS);            // How long to wait until a new frame is rendered
+extern Logger *gpLogger;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-#ifdef _DEBUG // Console is allocated in debug configuration
+    #ifdef _DEBUG // Console is allocated in debug configuration
     AllocConsole();
     HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
     int hCrt = _open_osfhandle((long) handle_out, _O_TEXT);
     FILE* hf_out = _fdopen(hCrt, "w");
     setvbuf(hf_out, NULL, _IONBF, 1);
     *stdout = *hf_out;
-#endif
+    #endif
 
     hWindow = InitializeWindow();
     if (!hWindow) return EXIT_FAILURE;
 
-    Init(kbds, ms, logger);
     ShowWindow(hWindow, nCmdShow);
     SetForegroundWindow(hWindow);
     SetFocus(hWindow);
+
+    // Initialize OpenGL
+    gfx = new Graphics(hWindow, WIDTH, HEIGHT);
+    Init(gfx, kbds, ms);
 
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
@@ -97,22 +105,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
         else
         {
-            auto duration = frame_duration_us - timer->Elapsed_us();
-            if (duration > 0) std::this_thread::sleep_for(std::chrono::microseconds(duration));
+            // Sleeps if the frame was faster than it should
+            //auto duration = frame_duration_us - timer->Elapsed_us();
+            //if (duration > 0) std::this_thread::sleep_for(std::chrono::microseconds(duration));
+            // Main loop
             Loop();
+            // Unloads buffer and update key states
             kbds->UpdateState();
+            // Updates button states
             ms->UpdateState();
-            timer->Reset();
+            // Rearms timer
+            //timer->Reset();
         }
     }
     Exit();
 
     if (!DestroyWindow(hWindow))
-        logger->Log("Error " + std::to_string(GetLastError()) + ": failed to destroy window");
+        gpLogger->Log("Error " + std::to_string(GetLastError()) + ": failed to destroy window");
     if (!UnregisterClass("Engi OpenGL Framework", hInstance))
-        logger->Log("Error " + std::to_string(GetLastError()) + ": failed to unregister window class");
+        gpLogger->Log("Error " + std::to_string(GetLastError()) + ": failed to unregister window class");
 
-    SafeDelete(logger);
+    SafeDelete(gpLogger);
     SafeDelete(kbds);
     SafeDelete(ms);
     SafeDelete(timer);
@@ -204,32 +217,32 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 HWND InitializeWindow()
 {
-    HWND hwnd			= nullptr;
-    hInstance			= GetModuleHandle(NULL);
+    HWND hwnd           = nullptr;
+    hInstance           = GetModuleHandle(NULL);
 
     WNDCLASS wc;
-    wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;	// Redraws window when it moves
-    wc.lpfnWndProc		= (WNDPROC) WndProc;					// Pointer to our message handling function
-    wc.cbClsExtra		= 0;									// Not used
-    wc.cbWndExtra		= 0;									// Not used
-    wc.hInstance		= hInstance;							// Instance of the window
-    wc.hIcon			= LoadIcon(NULL, IDI_SHIELD);			// Window Icon
-    wc.hCursor			= LoadCursor(NULL, IDC_ARROW);			// Mouse Arrow
-    wc.hbrBackground	= NULL;									// Using OpenGL, so we don't need this
-    wc.lpszMenuName		= NULL;									// No flyout menus
-    wc.lpszClassName	= "Engi OpenGL Framework";				// Class name to register
+    wc.style            = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;   // Redraws window when it moves
+    wc.lpfnWndProc      = (WNDPROC) WndProc;                    // Pointer to our message handling function
+    wc.cbClsExtra       = 0;                                    // Not used
+    wc.cbWndExtra       = 0;                                    // Not used
+    wc.hInstance        = hInstance;                            // Instance of the window
+    wc.hIcon            = LoadIcon(NULL, IDI_SHIELD);           // Window Icon
+    wc.hCursor          = LoadCursor(NULL, IDC_ARROW);          // Mouse Arrow
+    wc.hbrBackground    = NULL;                                 // Using OpenGL, so we don't need this
+    wc.lpszMenuName     = NULL;                                 // No flyout menus
+    wc.lpszClassName    = "Engi OpenGL Framework";              // Class name to register
 
     if (!RegisterClass(&wc))
     {
-        logger->Log("Error " + std::to_string(GetLastError()) + ": failed to register window class");
+        gpLogger->Log("Error " + std::to_string(GetLastError()) + ": failed to register window class");
         return nullptr;
     }
 
     RECT WindowRect;
-    WindowRect.left		= 0;
-    WindowRect.right	= WIDTH;
-    WindowRect.top		= 0;
-    WindowRect.bottom	= HEIGHT;
+    WindowRect.left     = 0;
+    WindowRect.right    = WIDTH;
+    WindowRect.top      = 0;
+    WindowRect.bottom   = HEIGHT;
 
     // We expect the client area of the window to be the specified resolution, so we need to adjust it to ensure it's correct
     AdjustWindowRectEx(&WindowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_APPWINDOW | WS_EX_WINDOWEDGE);
@@ -249,10 +262,12 @@ HWND InitializeWindow()
         hInstance,
         nullptr)))
     {
-        logger->Log("Error " + std::to_string(GetLastError()) + ": failed to create window");
+        gpLogger->Log("Error " + std::to_string(GetLastError()) + ": failed to create window");
         return nullptr;
     }
 
     return hwnd;
 }
+#else
+#error Currently, only Windows is supported
 #endif

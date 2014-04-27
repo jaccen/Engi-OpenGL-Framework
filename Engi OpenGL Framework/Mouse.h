@@ -41,7 +41,8 @@ namespace Mouse
         {}
         int x;
         int y;
-    };
+    }
+    Point;
 
     class MouseClient
     {

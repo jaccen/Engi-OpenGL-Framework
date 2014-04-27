@@ -19,31 +19,38 @@
 //------------------------------------------------------------------------------//
 
 #include "Logger.h"
+#include "Utility.h"
+
 #include "Keyboard.h"
 #include "Mouse.h"
-#include "Utility.h"
+
+#include "Graphics.h"
 
 using namespace std;
 using namespace Keyboard;
 using namespace Mouse;
+
 static KeyboardClient *kbdc = nullptr;
 static MouseClient *mc = nullptr;
-static Logger *logger = nullptr;
+static Graphics *gfx = nullptr;
 
-static unsigned frames;
+static unsigned frames = 0;
+extern Logger *gpLogger;
 
-void Init(KeyboardServer *kbds, MouseServer *ms, Logger* _logger)
+void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
 {
     // TODO: Initialization code here
     kbdc = new KeyboardClient(*kbds);
     mc = new MouseClient(*ms);
-    logger = _logger;
+    gfx = _gfx;
 }
 
 void Loop()
 {
     // TODO: Main loop code here
-    printf("%u\n", frames++);
+    gfx->BeginFrame();
+    gfx->Demo();
+    gfx->EndFrame();
 }
 
 void Exit()
