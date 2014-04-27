@@ -98,7 +98,6 @@ void Graphics::ChangeResolution(unsigned width, unsigned height)
     this->height = height;
 
     aspect = (float) width / (float) height;
-
     glViewport(0, 0, width, height);
 }
 
@@ -112,7 +111,6 @@ void Graphics::BeginFrame()
     glLoadIdentity();
     // Target view
     gluPerspective(45, aspect, 0.1, 5);
-    gluLookAt(0,0,2,0,0,0,0,1,0);
 }
 
 void Graphics::EndFrame()

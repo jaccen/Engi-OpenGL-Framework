@@ -25,17 +25,26 @@
 #include "Mouse.h"
 
 #include "Graphics.h"
+#include "Camera.h"
 
 using namespace std;
 using namespace Keyboard;
 using namespace Mouse;
 
-static KeyboardClient *kbdc = nullptr;
-static MouseClient *mc = nullptr;
-static Graphics *gfx = nullptr;
+static KeyboardClient   *kbdc   = nullptr;
+static MouseClient      *mc     = nullptr;
+static Graphics         *gfx    = nullptr;
+
+static Camera           *cam    = nullptr;
 
 static unsigned frames = 0;
 extern Logger *gpLogger;
+
+static float x = 0.0f;
+static float y = 0.0f;
+static float z = 2.0f;
+
+static float scale = 1.0f;
 
 void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
 {
@@ -43,13 +52,47 @@ void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
     kbdc = new KeyboardClient(*kbds);
     mc = new MouseClient(*ms);
     gfx = _gfx;
+
+    cam = new Camera(x, y, z, 0, 0, 0, 0, 0.1, 0);
 }
 
 void Loop()
 {
     // TODO: Main loop code here
     gfx->BeginFrame();
-    gfx->Demo();
+
+    if (kbdc->GetKeyState('A') == KEY_HELDDOWN)
+        x -= 0.05f;
+    if (kbdc->GetKeyState('D') == KEY_HELDDOWN)
+        x += 0.05f;
+    if (kbdc->GetKeyState('W') == KEY_HELDDOWN)
+        y -= 0.05f;
+    if (kbdc->GetKeyState('S') == KEY_HELDDOWN)
+        y += 0.05f;
+    if (kbdc->GetKeyState('Q') == KEY_HELDDOWN)
+        z -= 0.05f;
+    if (kbdc->GetKeyState('E') == KEY_HELDDOWN)
+        z += 0.05f;
+    if (kbdc->GetKeyState('1') == KEY_HELDDOWN)
+        scale -= 0.01f;
+    if (kbdc->GetKeyState('2') == KEY_HELDDOWN)
+        scale += 0.01f;
+
+    //cam->rotateEye(x, y, z);
+    cam->scale(scale);
+    cam->Update();
+
+    glBegin(GL_TRIANGLES);
+    // Front face
+    glColor3f(1,0,0);
+    glVertex3f(-0.0f * cos(x), +0.5f* sin(y), -0.0f * sin(z));
+    glColor3f(0,1,0);                 
+    glVertex3f(-0.5f * cos(x), -0.5f* sin(y), +0.5f * sin(z));
+    glColor3f(0,0,1);                 
+    glVertex3f(+0.5f * cos(x), -0.5f * sin(y), +0.5f * sin(z));
+
+    glEnd();
+
     gfx->EndFrame();
 }
 
@@ -58,4 +101,5 @@ void Exit()
     // TODO: Cleanup code here
     SafeDelete(kbdc);
     SafeDelete(mc);
+    SafeDelete(cam);
 }
