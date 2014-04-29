@@ -143,16 +143,17 @@ void Graphics::sphere()
     float step = 0.01f;
     float pi = 3.14159265359f;
 
-    glBegin(GL_QUAD_STRIP);
+    glBegin(GL_QUADS);
     for (float phi = 0.0f; phi <= 2 * pi; phi += step)
     {
         for (float theta = -pi / 2; theta <= pi / 2; theta += step)
         {
             auto vec = sphr(phi, theta);
             glColor3f((vec.x + 1.0f) / 2.0f, (vec.y + 1.0f) / 2.0f, (vec.z + 1.0f) / 2.0f);
-            glVertex3f(vec.x, vec.y, vec.z);
             glVertex3f(vec.x - 0.01, vec.y - 0.01, vec.z);
             glVertex3f(vec.x + 0.01, vec.y - 0.01, vec.z);
+            glVertex3f(vec.x + 0.01, vec.y + 0.01, vec.z);
+            glVertex3f(vec.x - 0.01, vec.y + 0.01, vec.z);
         }
     }
     glEnd();
