@@ -27,22 +27,22 @@ extern Logger *gpLogger;
 Graphics::Graphics(HWND hwnd, unsigned width, unsigned height) : width(width), height(height), aspect((float) width / (float) height)
 {
     PIXELFORMATDESCRIPTOR pfd = {
-        sizeof(PIXELFORMATDESCRIPTOR),	// Size Of This Pixel Format Descriptor
-        1,								// Version Number
+        sizeof(PIXELFORMATDESCRIPTOR),  // Size Of This Pixel Format Descriptor
+        1,                              // Version Number
         PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-        PFD_TYPE_RGBA,					// Request An RGBA Format
-        16,								// Select Our Color Depth
-        0, 0, 0, 0, 0, 0,				// Color Bits Ignored
-        0,								// No Alpha Buffer
-        0,								// Shift Bit Ignored
-        0,								// No Accumulation Buffer
-        0, 0, 0, 0,						// Accumulation Bits Ignored
-        16,								// 16Bit Z-Buffer (Depth Buffer)
-        0,								// No Stencil Buffer
-        0,								// No Auxiliary Buffer
-        PFD_MAIN_PLANE,					// Main Drawing Layer
-        0,								// Reserved
-        0, 0, 0							// Layer Masks Ignored
+        PFD_TYPE_RGBA,                  // Request An RGBA Format
+        16,                             // Select Our Color Depth
+        0, 0, 0, 0, 0, 0,               // Color Bits Ignored
+        0,                              // No Alpha Buffer
+        0,                              // Shift Bit Ignored
+        0,                              // No Accumulation Buffer
+        0, 0, 0, 0,                     // Accumulation Bits Ignored
+        16,                             // 16Bit Z-Buffer (Depth Buffer)
+        0,                              // No Stencil Buffer
+        0,                              // No Auxiliary Buffer
+        PFD_MAIN_PLANE,                 // Main Drawing Layer
+        0,                              // Reserved
+        0, 0, 0                         // Layer Masks Ignored
     };
 
     GLuint PixelFormat;
@@ -150,10 +150,10 @@ void Graphics::sphere()
         {
             auto vec = sphr(phi, theta);
             glColor3f((vec.x + 1.0f) / 2.0f, (vec.y + 1.0f) / 2.0f, (vec.z + 1.0f) / 2.0f);
-            glVertex3f(vec.x - 0.01, vec.y - 0.01, vec.z);
-            glVertex3f(vec.x + 0.01, vec.y - 0.01, vec.z);
-            glVertex3f(vec.x + 0.01, vec.y + 0.01, vec.z);
-            glVertex3f(vec.x - 0.01, vec.y + 0.01, vec.z);
+            glVertex3f(vec.x - step * 4, vec.y - step * 4, vec.z);
+            glVertex3f(vec.x + step * 4, vec.y - step * 4, vec.z);
+            glVertex3f(vec.x + step * 4, vec.y + step * 4, vec.z);
+            glVertex3f(vec.x - step * 4, vec.y + step * 4, vec.z);
         }
     }
     glEnd();
