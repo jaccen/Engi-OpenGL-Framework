@@ -18,11 +18,12 @@
 //      along with this program.  If not, see <http://www.gnu.org/licenses/>    //
 //------------------------------------------------------------------------------//
 
+//#define CONSOLE_MODE
+
 #ifdef _WIN32
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-
 #include <thread>
 
 #ifdef _DEBUG
@@ -32,14 +33,14 @@
 #endif
 
 // Utilities
-#include "Timer.h"
-#include "Logger.h"
+#include "Timer.hpp"
+#include "Logger.hpp"
 #include "Utility.h"
 // Input
-#include "Keyboard.h"
-#include "Mouse.h"
+#include "Keyboard.hpp"
+#include "Mouse.hpp"
 // Graphics
-#include "Graphics.h"
+#include "Graphics.hpp"
 
 using namespace Keyboard;
 using namespace Mouse;
@@ -66,19 +67,61 @@ static KeyboardServer *kbds = new KeyboardServer(10);           // Keyboard serv
 static MouseServer *ms = new MouseServer();                     // Mouse server contains the state of the buttons in a virtual mouse
 static Timer *timer = new Timer();                              // High precision timer with nanosecond precision
 
-static unsigned frame_duration_us = (1000000 / FPS);            // How long to wait until a new frame is rendered
+static unsigned frame_duration_us = ((float) 1000000 / FPS);            // How long to wait until a new frame is rendered
 extern Logger *gpLogger;
 
+#ifdef CONSOLE_MODE
+#include "glm\vec4.hpp"
+#include "glm\vec3.hpp"
+#include "glm\mat4x4.hpp"
+#include "glm\glm.hpp"
+#include "glm\gtx\constants.hpp"
+glm::vec3 sphere(float phi, float theta)
+{ 
+    // Parametric equation of a sphere is:
+    // x = r * sin u * cos v
+    // y = r * cos u * cos v
+    // z = r * sin v
+
+    // Where:
+    // r = radius           -> [-inf, +inf]
+    // u = horizontal angle -> [  0 , 2pi ]
+    // v = vertical angle   -> [  0 ,  pi ]
+
+    // We are look for a direction vector, which means r = 1
+    float cosv = glm::cos(theta);
+    return glm::vec3
+        (
+        glm::sin(phi) * cosv,
+        glm::cos(phi) * cosv,
+        glm::sin(theta)
+        );
+}
+
+int main(int argc, char **argv)
+{
+    float pi = glm::pi<float>();
+    for (float phi = 0.0f; phi <= 2 * pi; phi += 0.01f)
+    {
+        for (float theta = -pi/2; theta <= pi/2; theta += 0.01f)
+        {
+            glm::vec3 result = sphere(phi, theta);
+            printf("f(%.4f, %.4f) = %.8f\n", phi, theta, glm::sqrt(result.x*result.x + result.y*result.y + result.z*result.z));
+        }
+    }
+    return 0;
+}
+#else
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    #ifdef _DEBUG // Console is allocated in debug configuration
+#ifdef _DEBUG // Console is allocated in debug configuration
     AllocConsole();
     HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
     int hCrt = _open_osfhandle((long) handle_out, _O_TEXT);
     FILE* hf_out = _fdopen(hCrt, "w");
     setvbuf(hf_out, NULL, _IONBF, 1);
     *stdout = *hf_out;
-    #endif
+#endif
 
     hWindow = InitializeWindow();
     if (!hWindow) return EXIT_FAILURE;
@@ -130,18 +173,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     SafeDelete(ms);
     SafeDelete(timer);
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fclose(hf_out);
-    #endif
+#endif
 
     return msg.wParam;
 }
+#endif
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg)
     {
-    #pragma region Window commands
+#pragma region Window commands
     case WM_ACTIVATE: // Windows message for when the window is activated
     {
         return 0;
@@ -160,8 +204,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
     }
-    #pragma endregion
-    #pragma region Keyboard Input
+#pragma endregion
+#pragma region Keyboard Input
     case WM_KEYDOWN: // Windows message for KEYDOWN events
     {
         // Disables auto-repeat
@@ -176,8 +220,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         kbds->OnKeyUp(wParam);
         return 0;
     }
-    #pragma endregion
-    #pragma region Mouse Input
+#pragma endregion
+#pragma region Mouse Input
     case WM_MOUSEMOVE: // Mouse movement
     {
         ms->MoveTo(lParam & 0x0000FFFF, lParam >> 16);
@@ -213,7 +257,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         ms->MiddleButtonUp();
         break;
     }
-    #pragma endregion
+#pragma endregion
     }
     // Any other messages are handled by the default procedure
     return DefWindowProc(hwnd, msg, wParam, lParam);

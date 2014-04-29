@@ -21,8 +21,8 @@ private:
     glm::mat4 rot_eyeY;
     glm::mat4 rot_eyeZ;
     glm::vec4 eye;
-    glm::vec3 lookAt;
-    glm::vec3 normal;
+    glm::vec4 lookAt;
+    glm::vec4 normal;
 public:
     Camera(float ex, float ey, float ez,    // Eye vector
            float lx, float ly, float lz,    // Look at vector
@@ -38,6 +38,8 @@ public:
 
     void Update();                          // Updates camera parameters
 };
+
+// MATLAB
 
 //rotx =
 //[1,       0,       0,       0]

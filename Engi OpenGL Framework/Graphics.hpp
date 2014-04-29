@@ -31,6 +31,8 @@
 #include "GL\GL.h"
 #include "GL\GLU.h"
 
+#include "glm\vec3.hpp"
+
 #pragma comment(lib, "opengl32.lib")
 #pragma comment(lib, "glu32.lib")
 
@@ -57,4 +59,6 @@ public:
     void BeginFrame();
     void EndFrame();
     void Demo();
+
+    void sphere();
 };

@@ -18,7 +18,7 @@
 //      along with this program.  If not, see <http://www.gnu.org/licenses/>    //
 //------------------------------------------------------------------------------//
 
-#include "Keyboard.h"
+#include "Keyboard.hpp"
 #include "Utility.h"
 
 using namespace Keyboard;

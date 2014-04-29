@@ -1,4 +1,4 @@
-#include "Camera.h"
+#include "Camera.hpp"
 
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtx/rotate_vector.hpp"
@@ -7,22 +7,11 @@ Camera::Camera(float ex, float ey, float ez,
                float lx, float ly, float lz,
                float nx, float ny, float nz)
 {
-    gluLookAt(ex, ey, ez, lx, ly, lz, nx, ny, nz);
+    eye    = glm::vec4(ex, ey, ez, 1);                  // Can translate
+    lookAt = glm::vec4(lx, ly, lz, 0);                  // Can not translate
+    normal = glm::vec4(nx, ny, nz, 0);                  // Can not translate
 
-    eye.x = ex;
-    eye.y = ey;
-    eye.z = ez;
-    eye.w = 0.0f;          // No translation allowed
-
-    lookAt.x = lx;
-    lookAt.y = ly;
-    lookAt.z = lz;
-
-    normal.x = nx;
-    normal.y = ny;
-    normal.z = nz;
-
-    rot_eyeX = rot_eyeY = rot_eyeZ = glm::mat4();
+    rot_eyeX = rot_eyeY = rot_eyeZ = glm::mat4();       // Identity
     scaler = 1.0f;
 }
 
@@ -94,13 +83,12 @@ void Camera::scale(float scalar)
 
 void Camera::Update()
 {
-    glm::vec4 o_eye = eye;
-    eye =eye * (((rot_eyeX) * (rot_eyeY) * (rot_eyeZ)) * scaler);
+
+    glm::vec4 lt = lookAt * (((rot_eyeX) * (rot_eyeY) * (rot_eyeZ)) * scaler);
 
     gluLookAt(eye.x, eye.y, eye.z,
-              lookAt.x, lookAt.y, lookAt.z,
+              lt.x, lt.y, lt.z,
               normal.y, normal.z, normal.x);
-
-    eye = o_eye;
+    
     scaler = 1.0f;
 }

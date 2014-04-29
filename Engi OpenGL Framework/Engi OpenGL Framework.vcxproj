@@ -133,12 +133,12 @@
     <ClCompile Include="WindowsMain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="Graphics.h" />
-    <ClInclude Include="Keyboard.h" />
-    <ClInclude Include="Logger.h" />
-    <ClInclude Include="Mouse.h" />
-    <ClInclude Include="Timer.h" />
+    <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="Graphics.hpp" />
+    <ClInclude Include="Keyboard.hpp" />
+    <ClInclude Include="Logger.hpp" />
+    <ClInclude Include="Mouse.hpp" />
+    <ClInclude Include="Timer.hpp" />
     <ClInclude Include="Utility.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

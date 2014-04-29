@@ -18,8 +18,9 @@
 //      along with this program.  If not, see <http://www.gnu.org/licenses/>    //
 //------------------------------------------------------------------------------//
 
-#include "Graphics.h"
-#include "Logger.h"
+#include "Graphics.hpp"
+#include "Logger.hpp"
+#include "glm\glm.hpp"
 
 extern Logger *gpLogger;
 
@@ -110,7 +111,7 @@ void Graphics::BeginFrame()
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     // Target view
-    gluPerspective(45, aspect, 0.1, 5);
+    gluPerspective(45, aspect, 0.1, 15);
 }
 
 void Graphics::EndFrame()
@@ -128,5 +129,31 @@ void Graphics::Demo()
     glVertex2f(-0.5f, -0.5f);
     glColor3f(0.0f, 0.0f, 1.0f);
     glVertex2f(+0.5f, -0.5f);
+    glEnd();
+}
+
+void Graphics::sphere()
+{
+    auto sphr = [](float phi, float theta) -> glm::vec3
+    {
+        float cosv = glm::cos(theta);
+        return glm::vec3(glm::sin(phi) * cosv, glm::cos(phi) * cosv, glm::sin(theta));
+    };
+
+    float step = 0.01f;
+    float pi = 3.14159265359f;
+
+    glBegin(GL_QUAD_STRIP);
+    for (float phi = 0.0f; phi <= 2 * pi; phi += step)
+    {
+        for (float theta = -pi / 2; theta <= pi / 2; theta += step)
+        {
+            auto vec = sphr(phi, theta);
+            glColor3f((vec.x + 1.0f) / 2.0f, (vec.y + 1.0f) / 2.0f, (vec.z + 1.0f) / 2.0f);
+            glVertex3f(vec.x, vec.y, vec.z);
+            glVertex3f(vec.x - 0.01, vec.y - 0.01, vec.z);
+            glVertex3f(vec.x + 0.01, vec.y - 0.01, vec.z);
+        }
+    }
     glEnd();
 }
