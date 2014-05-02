@@ -31,7 +31,9 @@
 #include "GL\GL.h"
 #include "GL\GLU.h"
 
-#include "glm\vec3.hpp"
+#include "Math.hpp"
+
+#include <vector>
 
 #pragma comment(lib, "opengl32.lib")
 #pragma comment(lib, "glu32.lib")
@@ -39,26 +41,38 @@
 class Graphics
 {
 private:
+    //////////////////////////////////////////////////////////////////////////
+    // Context variables
     HWND hWindow = nullptr;             // Handle to window
     HDC  hDeviceContext = nullptr;      // Device context
     HGLRC hRenderingContext = nullptr;  // Rendering context
-
+    //////////////////////////////////////////////////////////////////////////
+    // Dimensions of the client area of the window
     unsigned width;
     unsigned height;
+    // Aspect ratio
     float aspect;
-
+    //////////////////////////////////////////////////////////////////////////
 public:
+    //////////////////////////////////////////////////////////////////////////
     // Constructor & destructor
     #ifdef _WIN32
     Graphics(HWND hwnd, unsigned width, unsigned height);
     #endif
     ~Graphics();
-
+    //////////////////////////////////////////////////////////////////////////
+    // Display related methods
     void ChangeResolution(unsigned width, unsigned height);
-
+    unsigned getWidth() const;
+    unsigned getHeight() const;
+    //////////////////////////////////////////////////////////////////////////
+    // Frame control methods
     void BeginFrame();
     void EndFrame();
+    void DrawMesh(const std::vector<glm::vec3> &vertexes, const std::vector<unsigned> &indexes, const glm::mat4 &transform);
+    //////////////////////////////////////////////////////////////////////////
+    // Draws some shapes for testing purposes
     void Demo();
-
     void sphere();
+    //////////////////////////////////////////////////////////////////////////
 };

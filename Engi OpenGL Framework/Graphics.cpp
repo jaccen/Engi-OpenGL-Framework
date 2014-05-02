@@ -20,7 +20,7 @@
 
 #include "Graphics.hpp"
 #include "Logger.hpp"
-#include "glm\glm.hpp"
+#include "Math.hpp"
 
 extern Logger *gpLogger;
 
@@ -102,6 +102,16 @@ void Graphics::ChangeResolution(unsigned width, unsigned height)
     glViewport(0, 0, width, height);
 }
 
+unsigned Graphics::getWidth() const
+{
+    return width;
+}
+
+unsigned Graphics::getHeight() const
+{
+    return height;
+}
+
 void Graphics::BeginFrame()
 {
     // Clears the buffer to black color
@@ -110,8 +120,9 @@ void Graphics::BeginFrame()
     // Sets projection matrix to render from vertexes
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    // Target view
-    gluPerspective(45, aspect, 0.1, 15);
+    gluPerspective(65.0, aspect, 0.01, 150);
+    //glMatrixMode(GL_MODELVIEW);
+    //glLoadIdentity();
 }
 
 void Graphics::EndFrame()
@@ -155,6 +166,17 @@ void Graphics::sphere()
             glVertex3f(vec.x + step * 4, vec.y + step * 4, vec.z);
             glVertex3f(vec.x - step * 4, vec.y + step * 4, vec.z);
         }
+    }
+    glEnd();
+}
+
+void Graphics::DrawMesh(const std::vector<glm::vec3> &vertexes, const std::vector<unsigned> &indexes, const glm::mat4 &transform)
+{
+    glBegin(GL_TRIANGLES);
+    for (auto itr = indexes.begin(); itr != indexes.end(); itr++)
+    {
+        glm::vec4 v = glm::vec4(vertexes.at(*itr), 1) * transform;
+        glVertex3f(v.x, v.y, v.z);
     }
     glEnd();
 }
