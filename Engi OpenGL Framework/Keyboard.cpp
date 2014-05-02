@@ -34,6 +34,11 @@ KeyState KeyboardClient::GetKeyState(unsigned char key) const
     return kbds.keys[key];
 }
 
+bool Keyboard::KeyboardClient::IsPressed(unsigned char key) const
+{
+    return kbds.keys[key] == KEY_DOWN || kbds.keys[key] == KEY_HELDDOWN;
+}
+
 KeyboardServer::KeyboardServer(unsigned max_buffer_size) : max_buffer_size(max_buffer_size)
 {
     keys = new KeyState[256];

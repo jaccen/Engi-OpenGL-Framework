@@ -73,5 +73,6 @@ namespace Keyboard
         KeyboardClient(KeyboardServer &kbds);
         ~KeyboardClient();
         KeyState GetKeyState(unsigned char key) const;
+        bool IsPressed(unsigned char key) const;
     };
 };
