@@ -9,20 +9,29 @@
 #include "glm\detail\func_trigonometric.hpp"
 #include "glm\detail\type_mat4x3.hpp"
 
+#include <vector>
+
 #ifndef M_PI
 #define M_PI 3.141592654
+#define M_PI180 (M_PI / 180)
 #endif
 
 namespace Matrix
 {
     static glm::mat4 Identity()
     {
-        return glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+        return glm::mat4(1, 0, 0, 0,
+                         0, 1, 0, 0,
+                         0, 0, 1, 0,
+                         0, 0, 0, 1);
     }
 
     static glm::mat4 Scale(float s)
     {
-        return glm::mat4(s, 0, 0, 0, 0, s, 0, 0, 0, 0, s, 0, 0, 0, 0, s);
+        return glm::mat4(s, 0, 0, 0,
+                         0, s, 0, 0,
+                         0, 0, s, 0,
+                         0, 0, 0, s);
     }
 
     static glm::mat4 RotateX(float rads)
@@ -87,6 +96,14 @@ namespace MathFunctions
     {
         glm::vec3 result = Sphere(radius, phi, theta);
         return center - result;
+    }
+
+    static glm::vec3 Garbage(float radius, float phi, float theta)
+    {
+
+        return glm::vec3(glm::sin(theta*theta)*glm::sin(phi),
+                         glm::sin(theta*phi)*glm::sin(theta),
+                         glm::cos(phi));
     }
 };
 
