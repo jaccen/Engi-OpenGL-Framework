@@ -8,53 +8,33 @@
 #pragma comment(lib, "opengl32.lib")
 #pragma comment(lib, "glu32.lib")
 
-// OpenGL Math
-#include "glm\vec4.hpp"
-#include "glm\vec3.hpp"
-#include "glm\mat4x4.hpp"
+#include "Math.hpp"
+#include "Utility.h"
 
 class Camera
 {
 private:
-    float scaler;
-    glm::mat4 rot_eyeX;
-    glm::mat4 rot_eyeY;
-    glm::mat4 rot_eyeZ;
-    glm::vec4 eye;
-    glm::vec4 lookAt;
-    glm::vec4 normal;
+    glm::vec3 vecPos;
+    glm::vec3 vecRight;
+    glm::vec3 vecUp;
+    glm::vec3 vecViewDir;
+    glm::vec3 vecDPos;
+    float rotateX;
+    float rotateY;
+    float rotateZ;
 public:
-    Camera(float ex, float ey, float ez,    // Eye vector
-           float lx, float ly, float lz,    // Look at vector
-           float nx, float ny, float nz);   // Normal vector
+    explicit Camera();
+    explicit Camera(float eye_x, float eye_y, float eye_z);
     ~Camera();
 
-    void rotateEye(float x, float y, float z);
-    void rotate_eyeX(float angle);          // Roll
-    void rotate_eyeY(float angle);          // Pitch
-    void rotate_eyeZ(float angle);          // Yaw
+    void Move(glm::vec3 direction);
+    void RotateX(float theta);
+    void RotateY(float theta);
+    void RotateZ(float theta);
 
-    void scale(float scalar);               // Move closer or away
+    void Render();
 
-    void Update();                          // Updates camera parameters
+    void Forward(float speed);
+    void Strafe(float speed);
+    void Upward(float speed);
 };
-
-// MATLAB
-
-//rotx =
-//[1,       0,       0,       0]
-//[0,       cos(x),  sin(x),  0]
-//[0,       -sin(x), cos(x),  0]
-//[0,       0,       0,       1]
-//
-//roty =
-//[cos(y),  0,       -sin(y), 0]
-//[0,       1,       0,       0]
-//[sin(y),  0,       cos(y),  0]
-//[0,       0,       0,       1]
-//
-//rotz =
-//[cos(z),  sin(z),  0,       0]
-//[-sin(z), cos(z),  0,       0]
-//[0,       0,       1,       0]
-//[0,       0,       0,       1]

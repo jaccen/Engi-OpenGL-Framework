@@ -1,94 +1,95 @@
 #include "Camera.hpp"
 
-#include "glm/gtc/type_ptr.hpp"
-#include "glm/gtx/rotate_vector.hpp"
+#define sq(x) (x*x)
+#define zeroVector (glm::vec3())
+#define len(vec) (glm::sqrt(sq(vec.x) + sq(vec.y) + sq(vec.z)))
 
-Camera::Camera(float ex, float ey, float ez,
-               float lx, float ly, float lz,
-               float nx, float ny, float nz)
+Camera::Camera()
 {
-    eye    = glm::vec4(ex, ey, ez, 1);                  // Can translate
-    lookAt = glm::vec4(lx, ly, lz, 0);                  // Can not translate
-    normal = glm::vec4(nx, ny, nz, 0);                  // Can not translate
+    vecDPos = vecPos = zeroVector;
+    vecViewDir = glm::vec3(0.0f, 0.0f, -1.0f);
+    vecRight = glm::vec3(1.0f, 0.0f, -1.0f);
+    vecUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    rot_eyeX = rot_eyeY = rot_eyeZ = glm::mat4();       // Identity
-    scaler = 1.0f;
+    rotateX = rotateY = rotateZ = 0.0f;
+}
+
+Camera::Camera(float eye_x, float eye_y, float eye_z)
+{
+    vecDPos = vecPos = zeroVector;
+    vecViewDir = glm::vec3(0.0f, 0.0f, -1.0f);
+    vecRight = glm::vec3(1.0f, 0.0f, -1.0f);
+    vecUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    rotateX = rotateY = rotateZ = 0.0f;
 }
 
 Camera::~Camera()
 {}
 
-void Camera::rotateEye(float x, float y, float z)
+void Camera::Move(glm::vec3 direction)
 {
-    float sinx = glm::sin(x);
-    float cosx = glm::cos(x);
-    float siny = glm::sin(y);
-    float cosy = glm::cos(y);
-    float sinz = glm::sin(z);
-    float cosz = glm::cos(z);
-
-    rot_eyeX = glm::mat4(1, 0, 0, 0,
-                         0, cosx, sinx, 0,
-                         0, -sinx, cosx, 0,
-                         0, 0, 0, 1);
-
-    rot_eyeY = glm::mat4(cosy, 0, -siny, 0,
-                         0, 1, 0, 0,
-                         siny, 0, cosy, 0,
-                         0, 0, 0, 1);
-
-    rot_eyeZ = glm::mat4(cosz, sinz, 0, 0,
-                         -sinz, cosz, 0, 0,
-                         0, 0, 1, 0,
-                         0, 0, 0, 1);
+    vecPos = vecPos + direction;
 }
 
-void Camera::rotate_eyeX(float angle)
+void Camera::RotateX(float theta)
 {
-    float sin = glm::sin(angle);
-    float cos = glm::cos(angle);
+    rotateX += theta;
 
-    rot_eyeX = glm::mat4(1, 0, 0, 0,
-                         0, cos, sin, 0,
-                         0, -sin, cos, 0,
-                         0, 0, 0, 1);
+    //Rotate viewdir around the right vector:
+    vecViewDir = glm::normalize(vecViewDir * glm::cos<float>(theta*M_PI180)
+                                + vecUp * glm::sin<float>(theta*M_PI180));
+
+    // Up vector will be the cross product of our adjusted vectors
+    vecUp = glm::cross(vecViewDir, vecRight) * (-1.0f);
 }
 
-void Camera::rotate_eyeY(float angle)
+void Camera::RotateY(float theta)
 {
-    float sin = glm::sin(angle);
-    float cos = glm::cos(angle);
+    rotateY += theta;
 
-    rot_eyeY = glm::mat4(cos, 0, -sin, 0,
-                         0, 1, 0, 0,
-                         sin, 0, cos, 0,
-                         0, 0, 0, 1);
+    //Rotate viewdir around the up vector:
+    vecViewDir = glm::normalize(vecViewDir*glm::cos<float>(theta*M_PI180)
+                                - vecRight*glm::sin<float>(theta*M_PI180));
+
+    //now compute the new RightVector (by cross product)
+    vecRight = glm::cross(vecViewDir, vecUp);
 }
 
-void Camera::rotate_eyeZ(float angle)
+void Camera::RotateZ(float theta)
 {
-    float sin = glm::sin(angle);
-    float cos = glm::cos(angle);
+    rotateZ += theta;
 
-    rot_eyeZ = glm::mat4(cos, sin, 0, 0,
-                         -sin, cos, 0, 0,
-                         0, 0, 1, 0,
-                         0, 0, 0, 1);
+    //Rotate viewdir around the right vector:
+    vecRight = glm::normalize(vecRight * glm::cos<float>(theta*M_PI180)
+                                    + vecUp * glm::sin<float>(theta*M_PI180));
+
+    //now compute the new UpVector (by cross product)
+    vecUp = glm::cross(vecViewDir, vecRight) * (-1.0f);
 }
 
-void Camera::scale(float scalar)
+void Camera::Render()
 {
-    scaler = scalar > 0 ? scalar : 1.0f;
+    // The point at which the camera looks:
+    glm::vec3 vecViewPoint = vecPos + vecViewDir;
+
+    // As we know the up vector, we can easily use gluLookAt:
+    gluLookAt(vecPos.x, vecPos.y, vecPos.z,
+              vecViewPoint.x, vecViewPoint.y, vecViewPoint.z,
+              vecUp.x, vecUp.y, vecUp.z);
 }
 
-void Camera::Update()
+void Camera::Forward(float speed)
 {
+    vecPos += (vecViewDir*-speed);
+}
 
-    glm::vec4 lt = lookAt * (((rot_eyeX) * (rot_eyeY) * (rot_eyeZ)) * scaler);
+void Camera::Strafe(float speed)
+{
+    vecPos += (vecRight*speed);
+}
 
-    gluLookAt(eye.x, eye.y, eye.z,
-              lt.x, lt.y, lt.z,
-              normal.y, normal.z, normal.x);
-    
-    scaler = 1.0f;
+void Camera::Upward(float speed)
+{
+    vecPos += (vecUp*speed);
 }
