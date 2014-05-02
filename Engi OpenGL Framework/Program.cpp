@@ -26,7 +26,11 @@
 
 #include "Graphics.hpp"
 #include "Camera.hpp"
-#include "glm\detail\func_trigonometric.hpp"
+
+#include "Math.hpp"
+
+void InputProcess();
+void UpdateModel();
 
 using namespace std;
 using namespace Keyboard;
@@ -41,16 +45,43 @@ static Camera           *cam    = nullptr;
 static unsigned frames = 0;
 extern Logger *gpLogger;
 
-static float scale = 1.0f;
+static std::vector<glm::vec3> triangle_vs = {glm::vec3(0.0, 0.5, 0.0), glm::vec3(-0.5, -0.5, 0.0), glm::vec3(0.5, -0.5, 0.0)};
+static std::vector<unsigned> triangle_is = {0, 1, 2};
 
-glm::vec3 sphere(float radius, float phi, float theta) {
-    float cosv = glm::cos(theta);
-    return glm::vec3(glm::sin(phi) * cosv, glm::cos(phi) * cosv, glm::sin(theta)) * radius;
-}
+static std::vector<glm::vec3> cube_vs =
+{
+    glm::vec3(+0.5, +0.5, +0.5),
+    glm::vec3(+0.5, -0.5, +0.5),
+    glm::vec3(-0.5, -0.5, +0.5),
+    glm::vec3(-0.5, +0.5, +0.5),
+    glm::vec3(+0.5, +0.5, -0.5),
+    glm::vec3(+0.5, -0.5, -0.5),
+    glm::vec3(-0.5, -0.5, -0.5),
+    glm::vec3(-0.5, +0.5, -0.5)
+};
 
-static float phi   = 0.0f;
-static float theta = 0.0f;
-static float zoom  = 5.0f;
+static std::vector<unsigned> cube_is =
+{
+    0, 1, 2, 0, 3, 2, // Front face
+    4, 5, 6, 4, 7, 6, // Back face
+    0, 1, 5, 0, 4, 5, // Right face
+    3, 2, 6, 3, 4, 6, // Left face
+    2, 1, 5, 2, 6, 5, // Bottom face
+    3, 0, 4, 3, 7, 4  // Top face
+};
+
+static glm::vec4 e = glm::vec4(0, 5, -5, 1);
+static glm::vec4 l = glm::vec4(.1, .1, .1, 0);
+
+static std::vector<glm::vec3> vertexes;
+static std::vector<glm::vec3> colors;
+
+static float r = 0.0;
+static float ep = 0.01f;
+
+#define v4(x)(glm::vec4(x, 0))
+
+//////////////////////////////////////////////////////////////////////////
 
 void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
 {
@@ -58,32 +89,91 @@ void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
     kbdc = new KeyboardClient(*kbds);
     mc = new MouseClient(*ms);
     gfx = _gfx;
+    cam = new Camera();
 
-    //cam = new Camera(0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+    vertexes.reserve((2 * M_PI / ep) * (M_PI / ep));
+    colors.reserve((2 * M_PI / ep) * (M_PI / ep));
+    for (float phi = 0; phi < M_PI * 2; phi += ep)
+    {
+        for (float tht = -M_PI / 2; tht < M_PI / 2; tht += ep)
+        {
+            vertexes.push_back(MathFunctions::Garbage(1.0, phi, tht));
+            colors.push_back(glm::vec3(phi / (M_PI * 2), (tht + (M_PI / 2)) / M_PI, 0.5));
+        }
+    }
 }
 
 void Loop()
 {
-    float epsilon = 0.05f;
-    // TODO: Main loop code here
     gfx->BeginFrame();
-    if (kbdc->GetKeyState('A') == KEY_HELDDOWN)
-        phi += epsilon;
-    if (kbdc->GetKeyState('D') == KEY_HELDDOWN)
-        phi -= epsilon;
-    if (kbdc->GetKeyState('W') == KEY_HELDDOWN)
-        theta += epsilon;
-    if (kbdc->GetKeyState('S') == KEY_HELDDOWN)
-        theta -= epsilon;
-    if (kbdc->GetKeyState('Q') == KEY_HELDDOWN)
-        zoom += epsilon;
-    if (kbdc->GetKeyState('E') == KEY_HELDDOWN)
-        zoom -= epsilon;
-    auto blauto = sphere(zoom, phi, theta);
-    gluLookAt(blauto.x, blauto.y, blauto.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-    //cam->Update();
-    gfx->sphere();
-    gfx->Demo();
+
+    float size = 10.0;
+    glBegin(GL_LINES);
+    glColor3f(1, 1, 1);
+    glVertex3f(-size, 0, 0); //x-axis
+    glVertex3f(size, 0, 0); //x-axis
+    glVertex3f(0, -size, 0); //y-axis
+    glVertex3f(0, size, 0); //y-axis
+    glVertex3f(0, 0, -size); //z-axis
+    glVertex3f(0, 0, size); //z-axis
+    glEnd();
+
+    InputProcess();
+    UpdateModel();
+
+    //gfx->Demo();
+    glColor3f(0.2, 0.1, 0.4);
+    //gfx->DrawMesh(cube_vs, cube_is, Matrix::Identity());
+    gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateX(r + M_PI / 2) * Matrix::Translate(2.0, 0.0, 0.0));
+    gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateZ(-r) * Matrix::Translate(0.0, 2.0, 0.0));
+    gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateX(-r) * Matrix::Translate(2.0, 2.0, 0.0));
+    gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateY(r) * Matrix::Translate(2.0, 0.0, 2.0));
+    gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateZ(-r - M_PI / 2) * Matrix::Translate(0.0, 0.0, 2.0));
+    gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateX(-r) * Matrix::Translate(-2.0, 2.0, 0.0));
+    gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateY(r) * Matrix::Translate(-2.0, 0.0, 2.0));
+    gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateZ(-r - M_PI / 2) * Matrix::Translate(-2.0, 2.0, -2.0));
+
+    { // Draw 'sky'
+        float radius = 50;
+        float z1, x1, y1, z2, x2, y2, z3, x3, y3, z4, x4, y4;
+
+        float dtheta = M_PI / 20;
+        float dphi = M_PI / 20;
+
+        glBegin(GL_QUADS);
+        for (float theta = 0; theta <= 2.0*M_PI; theta+=dtheta)
+        {
+            for (float phi = 0; phi <= M_PI; phi+=dphi)
+            {
+                z1 = radius * sin(phi + dphi) * cos(theta + dtheta);
+                x1 = radius * sin(phi + dphi) * sin(theta + dtheta);
+                y1 = radius * cos(phi + dphi);
+
+                z2 = radius * sin(phi) * cos(theta + dtheta);
+                x2 = radius * sin(phi) * sin(theta + dtheta);
+                y2 = radius * cos(phi);
+
+                z3 = radius * sin(phi) * cos(theta);
+                x3 = radius * sin(phi) * sin(theta);
+                y3 = radius * cos(phi);
+
+                z4 = radius * sin(phi + dphi) * cos(theta);
+                x4 = radius * sin(phi + dphi) * sin(theta);
+                y4 = radius * cos(phi + dphi);
+
+                glColor3f(z4 / radius*2, y4 / radius, x4 / radius);
+                glVertex3f(x4, y4, z4);
+                glColor3f(z1 / radius, y1 / radius, x1 / radius);
+                glVertex3f(x3, y3, z3);
+                glColor3f(z2 / radius, y2 / radius, x2 / radius);
+                glVertex3f(x2, y2, z2);
+                glColor3f(x3 / radius, z3 / radius, y3 / radius);
+                glVertex3f(x1, y1, z1);
+            }
+        }
+        glEnd();
+    }
+
     gfx->EndFrame();
 }
 
@@ -93,4 +183,35 @@ void Exit()
     SafeDelete(kbdc);
     SafeDelete(mc);
     SafeDelete(cam);
+}
+
+static float move_speed = 0.2f;
+static float angular_speed = 1.0f;
+static float mouse_sensitivity = 1.0f;
+
+void InputProcess()
+{
+    // Keyboard commands
+    if (kbdc->IsPressed('W'))
+        cam->Forward(-move_speed);
+    if (kbdc->IsPressed('S'))
+        cam->Forward(move_speed);;
+    if (kbdc->IsPressed('A'))
+        cam->Strafe(-move_speed);
+    if (kbdc->IsPressed('D'))
+        cam->Strafe(move_speed);
+    if (kbdc->IsPressed('Q'))
+        cam->RotateZ(angular_speed);
+    if (kbdc->IsPressed('E'))
+        cam->RotateZ(-angular_speed);
+
+    auto point = mc->GetDifference();
+    cam->RotateX(mouse_sensitivity * point.y);
+    cam->RotateY(mouse_sensitivity * point.x);
+}
+
+void UpdateModel()
+{
+    cam->Render();
+    r += 0.01;
 }
