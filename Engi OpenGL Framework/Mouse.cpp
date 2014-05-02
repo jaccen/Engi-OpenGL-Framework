@@ -48,13 +48,19 @@ const Point& MouseClient::GetPosition() const
     return ms.position;
 }
 
-MouseServer::MouseServer()
+const Point& Mouse::MouseClient::GetDifference() const
 {
-    position = Point();
-    rb = MB_INACTIVE;
-    lb = MB_INACTIVE;
-    mb = MB_INACTIVE;
+    return ms.diff;
 }
+
+MouseServer::MouseServer() : rb(MB_INACTIVE), lb(MB_INACTIVE), mb(MB_INACTIVE), position(Point())
+{}
+
+Mouse::MouseServer::MouseServer(int x, int y) : rb(MB_INACTIVE), lb(MB_INACTIVE), mb(MB_INACTIVE), position(Point(x, y))
+{}
+
+Mouse::MouseServer::MouseServer(Point &p) : rb(MB_INACTIVE), lb(MB_INACTIVE), mb(MB_INACTIVE), position(p)
+{}
 
 MouseServer::~MouseServer()
 {}
@@ -91,11 +97,15 @@ void Mouse::MouseServer::MiddleButtonUp()
 
 void MouseServer::MoveTo(Point &position)
 {
+    diff.x = this->position.x - position.x;
+    diff.y = this->position.y - position.y;
     this->position = position;
 }
 
 void Mouse::MouseServer::MoveTo(int x, int y)
 {
+    diff.x = this->position.x - x;
+    diff.y = this->position.y - y;
     this->position = Point(x, y);
 }
 
@@ -106,4 +116,7 @@ void Mouse::MouseServer::UpdateState()
 
     if (lb == MB_DOWN) lb = MB_HELDDOWN;
     else if (lb == MB_UP) lb = MB_INACTIVE;
+
+    diff.x = 0;
+    diff.y = 0;
 }

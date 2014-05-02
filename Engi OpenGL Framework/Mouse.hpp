@@ -27,10 +27,10 @@ namespace Mouse
 
     enum ButtonState
     {
-        MB_INACTIVE = 0,
-        MB_DOWN,
-        MB_HELDDOWN,
-        MB_UP
+        MB_INACTIVE = 0x00,
+        MB_DOWN = 0x01,
+        MB_HELDDOWN = 0x02,
+        MB_UP = 0x04
     };
 
     typedef struct Point
@@ -56,6 +56,7 @@ namespace Mouse
         ButtonState GetLeftButton() const;
         ButtonState GetMiddleButton() const;
         const Point& GetPosition() const;
+        const Point& GetDifference() const;
     };
 
     class MouseServer
@@ -63,12 +64,16 @@ namespace Mouse
     private:
         friend MouseClient;
         Point position;
+        Point diff;
         ButtonState rb;
         ButtonState lb;
         ButtonState mb;
     protected:
     public:
         MouseServer();
+        // Initial position of the mouse, this will prevent the diff value from comparing it to 0 in the first update
+        MouseServer(Point &p);
+        MouseServer(int x, int y);
         ~MouseServer();
         void RightButtonDown();
         void RightButtonUp();
