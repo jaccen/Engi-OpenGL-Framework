@@ -137,6 +137,7 @@
     <ClInclude Include="Graphics.hpp" />
     <ClInclude Include="Keyboard.hpp" />
     <ClInclude Include="Logger.hpp" />
+    <ClInclude Include="Math.hpp" />
     <ClInclude Include="Mouse.hpp" />
     <ClInclude Include="Timer.hpp" />
     <ClInclude Include="Utility.h" />
