@@ -19,7 +19,6 @@
 //------------------------------------------------------------------------------//
 
 //#define CONSOLE_MODE
-
 #ifdef _WIN32
 
 #define WIN32_LEAN_AND_MEAN
@@ -64,51 +63,16 @@ static HINSTANCE hInstance;                                     // Handle to ins
 
 static Graphics *gfx = nullptr;
 static KeyboardServer *kbds = new KeyboardServer(10);           // Keyboard server contains the state of the keys in a virtual keyboard
-static MouseServer *ms = new MouseServer();                     // Mouse server contains the state of the buttons in a virtual mouse
+static MouseServer *ms = nullptr;                               // Mouse server contains the state of the buttons in a virtual mouse
 static Timer *timer = new Timer();                              // High precision timer with nanosecond precision
 
-static unsigned frame_duration_us = ((float) 1000000 / FPS);            // How long to wait until a new frame is rendered
+static unsigned frame_duration_us = ((float) 1000000 / FPS);    // How long to wait until a new frame is rendered
 extern Logger *gpLogger;
 
 #ifdef CONSOLE_MODE
-#include "glm\vec4.hpp"
-#include "glm\vec3.hpp"
-#include "glm\mat4x4.hpp"
-#include "glm\glm.hpp"
-#include "glm\gtx\constants.hpp"
-glm::vec3 sphere(float phi, float theta)
-{ 
-    // Parametric equation of a sphere is:
-    // x = r * sin u * cos v
-    // y = r * cos u * cos v
-    // z = r * sin v
-
-    // Where:
-    // r = radius           -> [-inf, +inf]
-    // u = horizontal angle -> [  0 , 2pi ]
-    // v = vertical angle   -> [  0 ,  pi ]
-
-    // We are look for a direction vector, which means r = 1
-    float cosv = glm::cos(theta);
-    return glm::vec3
-        (
-        glm::sin(phi) * cosv,
-        glm::cos(phi) * cosv,
-        glm::sin(theta)
-        );
-}
 
 int main(int argc, char **argv)
 {
-    float pi = glm::pi<float>();
-    for (float phi = 0.0f; phi <= 2 * pi; phi += 0.01f)
-    {
-        for (float theta = -pi/2; theta <= pi/2; theta += 0.01f)
-        {
-            glm::vec3 result = sphere(phi, theta);
-            printf("f(%.4f, %.4f) = %.8f\n", phi, theta, glm::sqrt(result.x*result.x + result.y*result.y + result.z*result.z));
-        }
-    }
     return 0;
 }
 #else
@@ -130,6 +94,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     SetForegroundWindow(hWindow);
     SetFocus(hWindow);
 
+    // Moves the mouse cursor to the center of the window
+    SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2, GetSystemMetrics(SM_CYSCREEN) / 2);
+
+    // The current position of the mouse is used to make sure everything is initialized properly
+    POINT p;
+    GetCursorPos(&p);
+    ms = new MouseServer(p.x, p.y);
+
     // Initialize OpenGL
     gfx = new Graphics(hWindow, WIDTH, HEIGHT);
     Init(gfx, kbds, ms);
@@ -148,17 +120,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
         else
         {
-            // Sleeps if the frame was faster than it should
-            //auto duration = frame_duration_us - timer->Elapsed_us();
-            //if (duration > 0) std::this_thread::sleep_for(std::chrono::microseconds(duration));
             // Main loop
             Loop();
             // Unloads buffer and update key states
             kbds->UpdateState();
             // Updates button states
             ms->UpdateState();
-            // Rearms timer
-            //timer->Reset();
         }
     }
     Exit();
@@ -208,6 +175,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 #pragma region Keyboard Input
     case WM_KEYDOWN: // Windows message for KEYDOWN events
     {
+        if (wParam == 27) // Escape is pressed
+            PostQuitMessage(0);
+
         // Disables auto-repeat
         if (!(lParam & 0x40000000))
         {
@@ -317,5 +287,5 @@ HWND InitializeWindow()
     return hwnd;
 }
 #else
-#error Currently, only Windows is supported
+#error Currently, only Microsoft Windows is supported
 #endif
