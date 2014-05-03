@@ -28,6 +28,7 @@
 #include "Camera.hpp"
 
 #include "Math.hpp"
+#include "GlobalVariables.h"
 
 void InputProcess();
 void UpdateModel();
@@ -43,7 +44,6 @@ static Graphics         *gfx    = nullptr;
 static Camera           *cam    = nullptr;
 
 static unsigned frames = 0;
-extern Logger *gpLogger;
 
 static std::vector<glm::vec3> triangle_vs = {glm::vec3(0.0, 0.5, 0.0), glm::vec3(-0.5, -0.5, 0.0), glm::vec3(0.5, -0.5, 0.0)};
 static std::vector<unsigned> triangle_is = {0, 1, 2};
@@ -79,6 +79,8 @@ static std::vector<glm::vec3> colors;
 static float r = 0.0;
 static float ep = 0.01f;
 
+static bool bDraw = false;
+
 #define v4(x)(glm::vec4(x, 0))
 
 //////////////////////////////////////////////////////////////////////////
@@ -103,6 +105,8 @@ void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
     }
 }
 
+static float sphere_rotation = 0.0;
+
 void Loop()
 {
     gfx->BeginFrame();
@@ -121,8 +125,7 @@ void Loop()
     InputProcess();
     UpdateModel();
 
-    //gfx->Demo();
-    glColor3f(0.2, 0.1, 0.4);
+    if (bDraw) gfx->Demo();
     //gfx->DrawMesh(cube_vs, cube_is, Matrix::Identity());
     gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateX(r + M_PI / 2) * Matrix::Translate(2.0, 0.0, 0.0));
     gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateZ(-r) * Matrix::Translate(0.0, 2.0, 0.0));
@@ -133,46 +136,23 @@ void Loop()
     gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateY(r) * Matrix::Translate(-2.0, 0.0, 2.0));
     gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateZ(-r - M_PI / 2) * Matrix::Translate(-2.0, 2.0, -2.0));
 
-    { // Draw 'sky'
-        float radius = 50;
-        float z1, x1, y1, z2, x2, y2, z3, x3, y3, z4, x4, y4;
+    gfx->DrawSurface
+        (
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
+        [](float phi, float theta) -> float { return glm::cos<float>(phi); },
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
+        Matrix::Scale(5) * Matrix::Translate(30,0,0) * Matrix::RotateY(r),
+        20
+        );
 
-        float dtheta = M_PI / 20;
-        float dphi = M_PI / 20;
-
-        glBegin(GL_QUADS);
-        for (float theta = 0; theta <= 2.0*M_PI; theta+=dtheta)
-        {
-            for (float phi = 0; phi <= M_PI; phi+=dphi)
-            {
-                z1 = radius * sin(phi + dphi) * cos(theta + dtheta);
-                x1 = radius * sin(phi + dphi) * sin(theta + dtheta);
-                y1 = radius * cos(phi + dphi);
-
-                z2 = radius * sin(phi) * cos(theta + dtheta);
-                x2 = radius * sin(phi) * sin(theta + dtheta);
-                y2 = radius * cos(phi);
-
-                z3 = radius * sin(phi) * cos(theta);
-                x3 = radius * sin(phi) * sin(theta);
-                y3 = radius * cos(phi);
-
-                z4 = radius * sin(phi + dphi) * cos(theta);
-                x4 = radius * sin(phi + dphi) * sin(theta);
-                y4 = radius * cos(phi + dphi);
-
-                glColor3f(z4 / radius*2, y4 / radius, x4 / radius);
-                glVertex3f(x4, y4, z4);
-                glColor3f(z1 / radius, y1 / radius, x1 / radius);
-                glVertex3f(x3, y3, z3);
-                glColor3f(z2 / radius, y2 / radius, x2 / radius);
-                glVertex3f(x2, y2, z2);
-                glColor3f(x3 / radius, z3 / radius, y3 / radius);
-                glVertex3f(x1, y1, z1);
-            }
-        }
-        glEnd();
-    }
+    gfx->DrawSurface // Draw sky
+        (
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
+        [](float phi, float theta) -> float { return glm::cos<float>(phi); },
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
+        Matrix::Scale(50) * Matrix::RotateY(sphere_rotation),
+        20
+        );
 
     gfx->EndFrame();
 }
@@ -185,13 +165,16 @@ void Exit()
     SafeDelete(cam);
 }
 
-static float move_speed = 0.2f;
+static float move_speed = .1f;
 static float angular_speed = 1.0f;
 static float mouse_sensitivity = 1.0f;
 
 void InputProcess()
 {
-    // Keyboard commands
+    ///////////////////////
+    // Keyboard commands //
+    ///////////////////////
+    // Movement controls
     if (kbdc->IsPressed('W'))
         cam->Forward(-move_speed);
     if (kbdc->IsPressed('S'))
@@ -200,11 +183,17 @@ void InputProcess()
         cam->Strafe(-move_speed);
     if (kbdc->IsPressed('D'))
         cam->Strafe(move_speed);
+    // Roll camera
     if (kbdc->IsPressed('Q'))
         cam->RotateZ(angular_speed);
     if (kbdc->IsPressed('E'))
         cam->RotateZ(-angular_speed);
-
+    // Draw triangle
+    if (kbdc->GetKeyState('1') == KEY_DOWN)
+        bDraw = !bDraw;
+    // Request to quit
+    if (kbdc->IsPressed(27))
+        bQuit = true;
     auto point = mc->GetDifference();
     cam->RotateX(mouse_sensitivity * point.y);
     cam->RotateY(mouse_sensitivity * point.x);
@@ -213,5 +202,6 @@ void InputProcess()
 void UpdateModel()
 {
     cam->Render();
-    r += 0.01;
+    r += 0.01f;
+    sphere_rotation += 0.001f;
 }
