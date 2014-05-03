@@ -65,6 +65,7 @@ namespace Mouse
         friend MouseClient;
         Point position;
         Point diff;
+        const Point initial;
         ButtonState rb;
         ButtonState lb;
         ButtonState mb;
@@ -72,7 +73,6 @@ namespace Mouse
     public:
         MouseServer();
         // Initial position of the mouse, this will prevent the diff value from comparing it to 0 in the first update
-        MouseServer(Point &p);
         MouseServer(int x, int y);
         ~MouseServer();
         void RightButtonDown();
@@ -81,8 +81,9 @@ namespace Mouse
         void LeftButtonUp();
         void MiddleButtonDown();
         void MiddleButtonUp();
-        void MoveTo(Point &position);
-        void MoveTo(int x, int y);
+        void MoveTo(int x, int y);      // Moves cursor to specified location
+        void Movement(int x, int y);    // Moves cursor by specified values
+        // Resets to center of screen without updating diff, useful for FPS style cameras
         void UpdateState();
     };
 };
