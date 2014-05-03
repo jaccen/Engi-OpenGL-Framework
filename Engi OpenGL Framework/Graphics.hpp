@@ -33,6 +33,8 @@
 
 #include "Math.hpp"
 
+#include "GlobalVariables.h"
+
 #include <vector>
 
 #pragma comment(lib, "opengl32.lib")
@@ -56,9 +58,9 @@ private:
 public:
     //////////////////////////////////////////////////////////////////////////
     // Constructor & destructor
-    #ifdef _WIN32
+#ifdef _WIN32
     Graphics(HWND hwnd, unsigned width, unsigned height);
-    #endif
+#endif
     ~Graphics();
     //////////////////////////////////////////////////////////////////////////
     // Display related methods
@@ -73,6 +75,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
     // Draws some shapes for testing purposes
     void Demo();
-    void sphere();
+    // Draws a surface, to do that pass the functions to evaluate each coordinate of the vector separetely (parametrized format)
+    void DrawSurface(float(*para_x)(float,float), float(*para_y)(float,float), float(*para_z)(float,float), glm::mat4 &transform, unsigned quality = 20);
     //////////////////////////////////////////////////////////////////////////
 };

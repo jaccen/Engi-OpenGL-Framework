@@ -22,8 +22,6 @@
 #include "Logger.hpp"
 #include "Math.hpp"
 
-extern Logger *gpLogger;
-
 Graphics::Graphics(HWND hwnd, unsigned width, unsigned height) : width(width), height(height), aspect((float) width / (float) height)
 {
     PIXELFORMATDESCRIPTOR pfd = {
@@ -48,23 +46,23 @@ Graphics::Graphics(HWND hwnd, unsigned width, unsigned height) : width(width), h
     GLuint PixelFormat;
     if (!(hDeviceContext=GetDC(hwnd)))
     {
-        gpLogger->Log("[OpenGL]: Failed to get device context of window");
+        logger.Log("[OpenGL]: Failed to get device context of window");
     }
     if (!(PixelFormat=ChoosePixelFormat(hDeviceContext, &pfd)))
     {
-        gpLogger->Log("[OpenGL]: Failed to specify pixel format");
+        logger.Log("[OpenGL]: Failed to specify pixel format");
     }
     if (!SetPixelFormat(hDeviceContext, PixelFormat, &pfd))
     {
-        gpLogger->Log("[OpenGL]: Failed to set pixel format");
+        logger.Log("[OpenGL]: Failed to set pixel format");
     }
     if (!(hRenderingContext=wglCreateContext(hDeviceContext)))
     {
-        gpLogger->Log("[OpenGL]: Failed to create rendering context");
+        logger.Log("[OpenGL]: Failed to create rendering context");
     }
     if (!wglMakeCurrent(hDeviceContext, hRenderingContext))
     {
-        gpLogger->Log("[OpenGL]: Failed to set current context");
+        logger.Log("[OpenGL]: Failed to set current context");
     }
 
     glShadeModel(GL_SMOOTH);                            // Smooth shaders
@@ -120,7 +118,7 @@ void Graphics::BeginFrame()
     // Sets projection matrix to render from vertexes
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(65.0, aspect, 0.01, 150);
+    gluPerspective(65.0, aspect, 0.01, 1000.0);
     //glMatrixMode(GL_MODELVIEW);
     //glLoadIdentity();
 }
@@ -143,40 +141,66 @@ void Graphics::Demo()
     glEnd();
 }
 
-void Graphics::sphere()
+void Graphics::DrawMesh(const std::vector<glm::vec3> &vertexes, const std::vector<unsigned> &indexes, const glm::mat4 &transform)
 {
-    auto sphr = [](float phi, float theta) -> glm::vec3
+    glBegin(GL_TRIANGLES);
+    int x = 0;
+    for (auto itr = indexes.begin(); itr != indexes.end(); itr++)
     {
-        float cosv = glm::cos(theta);
-        return glm::vec3(glm::sin(phi) * cosv, glm::cos(phi) * cosv, glm::sin(theta));
-    };
-
-    float step = 0.01f;
-    float pi = 3.14159265359f;
-
-    glBegin(GL_QUADS);
-    for (float phi = 0.0f; phi <= 2 * pi; phi += step)
-    {
-        for (float theta = -pi / 2; theta <= pi / 2; theta += step)
-        {
-            auto vec = sphr(phi, theta);
-            glColor3f((vec.x + 1.0f) / 2.0f, (vec.y + 1.0f) / 2.0f, (vec.z + 1.0f) / 2.0f);
-            glVertex3f(vec.x - step * 4, vec.y - step * 4, vec.z);
-            glVertex3f(vec.x + step * 4, vec.y - step * 4, vec.z);
-            glVertex3f(vec.x + step * 4, vec.y + step * 4, vec.z);
-            glVertex3f(vec.x - step * 4, vec.y + step * 4, vec.z);
-        }
+        if (x++ % 3 == 0) glColor3f(1.0f, 0.0f, 0.0f);
+        else glColor3f(1.0f, 1.0f, 1.0f);
+        glm::vec4 v = glm::vec4(vertexes.at(*itr), 1) * transform;
+        glVertex3f(v.x, v.y, v.z);
     }
     glEnd();
 }
 
-void Graphics::DrawMesh(const std::vector<glm::vec3> &vertexes, const std::vector<unsigned> &indexes, const glm::mat4 &transform)
+void Graphics::DrawSurface(float(*para_x)(float, float), float(*para_y)(float, float), float(*para_z)(float, float), glm::mat4 &transform, unsigned quality)
 {
-    glBegin(GL_TRIANGLES);
-    for (auto itr = indexes.begin(); itr != indexes.end(); itr++)
+    glm::vec4 eval;
+    eval.w = 1.0f; // Allow this vector to be translated
+    float dtheta = M_PI / quality;
+    float dphi = M_PI / quality;
+
+    glBegin(GL_QUADS);
+    for (float theta = 0; theta <= 2.0*M_PI; theta+=dtheta)
     {
-        glm::vec4 v = glm::vec4(vertexes.at(*itr), 1) * transform;
-        glVertex3f(v.x, v.y, v.z);
+        for (float phi = 0; phi <= M_PI; phi+=dphi)
+        {
+            // Vertex 01
+            eval.x = para_x(phi + dphi, theta + dtheta);
+            eval.y = para_y(phi + dphi, theta + dtheta);
+            eval.z = para_z(phi + dphi, theta + dtheta);
+
+            glColor3f(0, 0, 1); // TODO: remove
+            eval = eval * transform;
+            glVertex3f(eval.x, eval.y, eval.z);
+
+            // Vertex 02
+            eval.x = para_x(phi, theta + dtheta);
+            eval.y = para_y(phi, theta + dtheta);
+            eval.z = para_z(phi, theta + dtheta);
+
+            glColor3f(0, 0, 0); // TODO: remove
+            eval = eval * transform;
+            glVertex3f(eval.x, eval.y, eval.z);
+
+            // Vertex 03
+            eval.x = para_x(phi, theta);
+            eval.y = para_y(phi, theta);
+            eval.z = para_z(phi, theta);
+
+            eval = eval * transform;
+            glVertex3f(eval.x, eval.y, eval.z);
+
+            // Vertex 04
+            eval.x = para_x(phi + dphi, theta);
+            eval.y = para_y(phi + dphi, theta);
+            eval.z = para_z(phi + dphi, theta);
+
+            eval = eval * transform;
+            glVertex3f(eval.x, eval.y, eval.z);
+        }
     }
     glEnd();
 }
