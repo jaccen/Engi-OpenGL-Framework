@@ -5,21 +5,23 @@ Engi OpenGL Framework
   The goal of this project is to create an easy-to-use and learn OpenGL framework to create hardware accelerated 3D applications.<br/>
   I work on this project when I have free time and feel in the right mood.<br/>
 
+<b>Requirements</b><br/>
+- C++11 compliant compiler
+
 <b>Scope</b><br/>
-  This IS a framework to develop applications using OpenGL, for example games.<br/>
-  This IS NOT a useful application in it's native state.<br/>
-  Currently, this is NOT cross-platform, however the code was designed to be very portable.<br/>
+  - This IS a framework to develop applications using OpenGL, for example games.<br/>
+  - This IS NOT a useful application in it's native state.<br/>
+  - Currently, this is NOT cross-platform, however the code was designed to be very portable.<br/>
 
 <b>Supported Platforms</b><br/>
-- Microsoft Windows<br/>
+- Microsoft Windows
 
 <b>Supported features</b><br/>
-  <ul>
-  <li>Surface drawing</li>
-  <li>Fully functional flight sim style camera</li>
-  <li>Uses raw input</li>
-  <li>Keyboard with queue and 4 states for each key</li>
-  <li>Mouse with 4 states for each button</li>
-  </ul>
+  - Surface drawing
+  - Fully functional flight sim style camera
+  - Uses raw input
+  - Keyboard with queue and 4 states for each key
+  - Mouse with 4 states for each button
+
 <b>Planned features</b><br/>
-<br/>
+- Linux support
