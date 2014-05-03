@@ -31,7 +31,7 @@ namespace Matrix
         return glm::mat4(s, 0, 0, 0,
                          0, s, 0, 0,
                          0, 0, s, 0,
-                         0, 0, 0, s);
+                         0, 0, 0, 1);
     }
 
     static glm::mat4 RotateX(float rads)
