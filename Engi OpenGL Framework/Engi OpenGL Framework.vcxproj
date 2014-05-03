@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="GlobalVariables.h" />
     <ClInclude Include="Graphics.hpp" />
     <ClInclude Include="Keyboard.hpp" />
     <ClInclude Include="Logger.hpp" />
