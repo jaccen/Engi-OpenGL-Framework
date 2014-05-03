@@ -101,8 +101,11 @@ void KeyboardServer::UpdateState()
     while (!buffer->empty())
     {
         KeyStruct ks = buffer->front();
-        updates->push(ks.key);
-        keys[ks.key] = ks.state;
+        if (!(keys[ks.key] == KEY_HELDDOWN && ks.state == KEY_DOWN))
+        {
+            updates->push(ks.key);
+            keys[ks.key] = ks.state;
+        }
         buffer->pop();
     }
     m->unlock();
