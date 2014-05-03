@@ -14,7 +14,12 @@ Engi OpenGL Framework
 - Microsoft Windows<br/>
 
 <b>Supported features</b><br/>
-<br/>
-
+  <ul>
+  <li>Surface drawing</li>
+  <li>Fully functional flight sim style camera</li>
+  <li>Uses raw input</li>
+  <li>Keyboard with queue and 4 states for each key</li>
+  <li>Mouse with 4 states for each button</li>
+  </ul>
 <b>Planned features</b><br/>
 <br/>
