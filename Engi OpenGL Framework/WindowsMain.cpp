@@ -18,6 +18,10 @@
 //      along with this program.  If not, see <http://www.gnu.org/licenses/>    //
 //------------------------------------------------------------------------------//
 
+#define SHOW_CONSOLE 1
+#define SHOW_MOUSE_INPUT 1
+#define SHOW_KEYBOARD_INPUT 0
+
 //#define CONSOLE_MODE
 #ifdef _WIN32
 
@@ -33,13 +37,14 @@
 
 // Utilities
 #include "Timer.hpp"
-#include "Logger.hpp"
 #include "Utility.h"
 // Input
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
 // Graphics
 #include "Graphics.hpp"
+// Global variables
+#include "GlobalVariables.h"
 
 using namespace Keyboard;
 using namespace Mouse;
@@ -62,45 +67,36 @@ static HWND hWindow;                                            // Handle to win
 static HINSTANCE hInstance;                                     // Handle to instance
 
 static Graphics *gfx = nullptr;
-static KeyboardServer *kbds = new KeyboardServer(10);           // Keyboard server contains the state of the keys in a virtual keyboard
+static KeyboardServer *kbds = nullptr;                          // Keyboard server contains the state of the keys in a virtual keyboard
 static MouseServer *ms = nullptr;                               // Mouse server contains the state of the buttons in a virtual mouse
 static Timer *timer = new Timer();                              // High precision timer with nanosecond precision
 
 static unsigned frame_duration_us = ((float) 1000000 / FPS);    // How long to wait until a new frame is rendered
-extern Logger *gpLogger;
+Logger logger(".\\out.log");                                       // Standard logger file
 
-#ifdef CONSOLE_MODE
+bool bQuit = false;
 
-int main(int argc, char **argv)
-{
-    return 0;
-}
-#else
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-#ifdef _DEBUG // Console is allocated in debug configuration
+    #if (SHOW_CONSOLE)
     AllocConsole();
     HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
     int hCrt = _open_osfhandle((long) handle_out, _O_TEXT);
     FILE* hf_out = _fdopen(hCrt, "w");
     setvbuf(hf_out, NULL, _IONBF, 1);
     *stdout = *hf_out;
-#endif
-
+    #endif
+    // Create a window
     hWindow = InitializeWindow();
     if (!hWindow) return EXIT_FAILURE;
-
+    // Show, focus window
     ShowWindow(hWindow, nCmdShow);
     SetForegroundWindow(hWindow);
     SetFocus(hWindow);
 
-    // Moves the mouse cursor to the center of the window
-    SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2, GetSystemMetrics(SM_CYSCREEN) / 2);
-
-    // The current position of the mouse is used to make sure everything is initialized properly
-    POINT p;
-    GetCursorPos(&p);
-    ms = new MouseServer(p.x, p.y);
+    // Initialize input methods
+    ms = new MouseServer();
+    kbds = new KeyboardServer(10);
 
     // Initialize OpenGL
     gfx = new Graphics(hWindow, WIDTH, HEIGHT);
@@ -110,7 +106,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ZeroMemory(&msg, sizeof(msg));
 
     timer->Reset();
-    while (msg.message != WM_QUIT)
+    while (msg.message != WM_QUIT && !bQuit)
     {
         // Handles window's messages, they contain keypresses, mouse movement and window updates
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -131,28 +127,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Exit();
 
     if (!DestroyWindow(hWindow))
-        gpLogger->Log("Error " + std::to_string(GetLastError()) + ": failed to destroy window");
+        logger.Log("Error " + std::to_string(GetLastError()) + ": failed to destroy window");
     if (!UnregisterClass("Engi OpenGL Framework", hInstance))
-        gpLogger->Log("Error " + std::to_string(GetLastError()) + ": failed to unregister window class");
+        logger.Log("Error " + std::to_string(GetLastError()) + ": failed to unregister window class");
 
-    SafeDelete(gpLogger);
     SafeDelete(kbds);
     SafeDelete(ms);
     SafeDelete(timer);
 
-#ifdef _DEBUG
+    #if (SHSHOW_CONSOLE)
     fclose(hf_out);
-#endif
+    #endif
 
     return msg.wParam;
 }
-#endif
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg)
     {
-#pragma region Window commands
+    #pragma region Window commands
     case WM_ACTIVATE: // Windows message for when the window is activated
     {
         return 0;
@@ -166,68 +160,71 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_SIZE: // Windows message to resize a window
     {
         if (gfx) // Resize is called before we initialize the graphics, this will prevent undefined behavior
-        {
             gfx->ChangeResolution(lParam & 0x0000FFFF, lParam >> 16);
-        }
         break;
     }
-#pragma endregion
-#pragma region Keyboard Input
-    case WM_KEYDOWN: // Windows message for KEYDOWN events
+    case WM_SETFOCUS:
     {
-        if (wParam == 27) // Escape is pressed
-            PostQuitMessage(0);
+        ShowCursor(false);
+        break;
+    }
+    case WM_KILLFOCUS:
+    {
+        ShowCursor(true);
+        break;
+    }
+    #pragma endregion
+    #pragma region Input message
+    case WM_INPUT:
+    {
+        UINT dwSize;
 
-        // Disables auto-repeat
-        if (!(lParam & 0x40000000))
+        GetRawInputData((HRAWINPUT) lParam, RID_INPUT, NULL, &dwSize,
+                        sizeof(RAWINPUTHEADER));
+        LPBYTE lpb = new BYTE[dwSize];
+        if (lpb == NULL) return 0;
+
+        if (GetRawInputData((HRAWINPUT) lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
+            logger.Log("GetRawInputData returned incorrect header size");
+
+        RAWINPUT* raw = (RAWINPUT*) lpb;
+
+        if (raw->header.dwType == RIM_TYPEKEYBOARD)
         {
-            kbds->OnKeyDown(wParam);
+            if (raw->data.keyboard.Message == WM_KEYDOWN)
+                kbds->OnKeyDown(raw->data.keyboard.VKey);
+            else // WM_KEYUP
+                kbds->OnKeyUp(raw->data.keyboard.VKey);
+
+            #if (SHOW_KEYBOARD_INPUT) && (SHOW_CONSOLE)
+            printf("KB: mc=%d f=%d r=%d ei=%d m=%d vk=%d\n",
+                   raw->data.keyboard.MakeCode,
+                   raw->data.keyboard.Flags,
+                   raw->data.keyboard.Reserved,
+                   raw->data.keyboard.ExtraInformation,
+                   raw->data.keyboard.Message,
+                   raw->data.keyboard.VKey);
+            #endif
         }
+        else if (raw->header.dwType == RIM_TYPEMOUSE)
+        {
+            ms->Movement(-raw->data.mouse.lLastX, -raw->data.mouse.lLastY);
+            #if (SHOW_MOUSE_INPUT) && (SHOW_CONSOLE)
+            printf("MS: f=%d b=%d bf=%d bd=%d rb=%d lx=%d ly=%d ei=%d\n",
+                   raw->data.mouse.usFlags,
+                   raw->data.mouse.ulButtons,
+                   raw->data.mouse.usButtonFlags,
+                   raw->data.mouse.usButtonData,
+                   raw->data.mouse.ulRawButtons,
+                   raw->data.mouse.lLastX,
+                   raw->data.mouse.lLastY,
+                   raw->data.mouse.ulExtraInformation);
+            #endif
+        }
+        delete[] lpb;
         return 0;
     }
-    case WM_KEYUP: // Windows message for KEYUP events
-    {
-        kbds->OnKeyUp(wParam);
-        return 0;
-    }
-#pragma endregion
-#pragma region Mouse Input
-    case WM_MOUSEMOVE: // Mouse movement
-    {
-        ms->MoveTo(lParam & 0x0000FFFF, lParam >> 16);
-        break;
-    }
-    case WM_RBUTTONDOWN: // Right button down
-    {
-        ms->RightButtonDown();
-        break;
-    }
-    case WM_RBUTTONUP: // Right button up
-    {
-        ms->RightButtonUp();
-        break;
-    }
-    case WM_LBUTTONDOWN: // Left button down
-    {
-        ms->LeftButtonDown();
-        break;
-    }
-    case WM_LBUTTONUP: // Left button up
-    {
-        ms->LeftButtonUp();
-        break;
-    }
-    case WM_MBUTTONDOWN: // Middle button down
-    {
-        ms->MiddleButtonDown();
-        break;
-    }
-    case WM_MBUTTONUP: // Middle button up
-    {
-        ms->MiddleButtonUp();
-        break;
-    }
-#pragma endregion
+    #pragma endregion
     }
     // Any other messages are handled by the default procedure
     return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -252,7 +249,7 @@ HWND InitializeWindow()
 
     if (!RegisterClass(&wc))
     {
-        gpLogger->Log("Error " + std::to_string(GetLastError()) + ": failed to register window class");
+        logger.Log("Error " + std::to_string(GetLastError()) + ": failed to register window class");
         return nullptr;
     }
 
@@ -280,8 +277,25 @@ HWND InitializeWindow()
         hInstance,
         nullptr)))
     {
-        gpLogger->Log("Error " + std::to_string(GetLastError()) + ": failed to create window");
+        logger.Log("Error " + std::to_string(GetLastError()) + ": failed to create window");
         return nullptr;
+    }
+
+    RAWINPUTDEVICE Rid[2];
+
+    Rid[0].usUsagePage = 0x01;
+    Rid[0].usUsage = 0x02;
+    Rid[0].dwFlags = RIDEV_NOLEGACY;   // adds HID mouse and also ignores legacy mouse messages
+    Rid[0].hwndTarget = 0;
+
+    Rid[1].usUsagePage = 0x01;
+    Rid[1].usUsage = 0x06;
+    Rid[1].dwFlags = RIDEV_NOLEGACY;   // adds HID keyboard and also ignores legacy keyboard messages
+    Rid[1].hwndTarget = 0;
+
+    if (RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])) == FALSE)
+    {
+        logger.Log("Failed to register input devices");
     }
 
     return hwnd;
