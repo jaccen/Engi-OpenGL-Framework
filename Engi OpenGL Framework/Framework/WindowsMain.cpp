@@ -54,11 +54,6 @@ extern void Init(Graphics*, KeyboardServer*, MouseServer*);
 extern void Loop();
 extern void Exit();
 
-// TODO: configuration file
-#define WIDTH 640                                               // Client area width in pixels
-#define HEIGHT 480                                              // Client area height in pixels
-#define FPS 60                                                  // Target FPS
-
 // Windows functions
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);           // Defines how each message will be processed
 HWND InitializeWindow();                                        // Creates a window for the application

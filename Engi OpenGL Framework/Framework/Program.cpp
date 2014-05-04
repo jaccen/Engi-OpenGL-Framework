@@ -67,13 +67,14 @@ static std::vector<unsigned> cube_is =
     2, 1, 5, 2, 6, 5, // Bottom face
     3, 0, 4, 3, 7, 4  // Top face
 };
-
-static float move_speed = 0.05f;
+// Camera controls
+static float move_speed = 1.0f;
 static float angular_speed = 1.0f;
 static float mouse_sensitivity = 1.0f;
 static float r = 0.0;
-
-static unsigned textureID = 0;
+// Textures
+static unsigned earthID = 0;
+static unsigned sunID = 0;
 
 void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
 {
@@ -83,12 +84,8 @@ void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
     cam = new Camera();
     // TODO: Initialization code here
 
-    textureID = SOIL_load_OGL_texture(
-        ".\\Assets\\Images\\Earth.jpg",
-        SOIL_LOAD_AUTO,
-        SOIL_CREATE_NEW_ID,
-        SOIL_FLAG_INVERT_Y
-        );
+    earthID = glLoadTexture(".\\Assets\\Images\\Earth.jpg");
+    sunID = glLoadTexture(".\\Assets\\Images\\Sun.jpg");
 }
 
 static float sphere_rotation = 0.0;
@@ -103,13 +100,22 @@ void Loop()
     // y(u, v) = a sqrt(u ^ 2 + 1) sin(v)
     // z(u, v) = c u
 
-    gfx->DrawSurface // Draws a 'sky'
+    gfx->DrawSurface // Draws the sun
+        (
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
+        [](float phi, float theta) -> float { return glm::cos<float>(phi); },
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
+        Matrix::Scale(40),
+        sunID, 20
+        );
+
+    gfx->DrawSurface // Draws earth
     (
         [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
         [](float phi, float theta) -> float { return glm::cos<float>(phi); },
         [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
-        Matrix::RotateY(sphere_rotation),
-        textureID, 200
+        Matrix::RotateY(sphere_rotation * 365.25f) * Matrix::Scale(20)*Matrix::Translate(150, 0, 150) * Matrix::RotateZ(sphere_rotation) * Matrix::RotateX(sphere_rotation),
+        earthID, 20
     );
 
     //gfx->DrawSurface // Hyperboloid
@@ -154,6 +160,8 @@ void Loop()
 void Exit()
 {
     // TODO: Cleanup code here
+    glDeleteTextures(1, &earthID);
+    glDeleteTextures(1, &sunID);
     SafeDelete(kbdc);
     SafeDelete(mc);
     SafeDelete(cam);
@@ -190,6 +198,7 @@ void InputProcess()
 void UpdateModel()
 {
     r += 0.01f;
-    sphere_rotation += 0.001f;
+    // 1 Hour to orbit around the sun
+    sphere_rotation += (M_PI * 2) / (FPS * 3600);
     cam->Render();
 }
