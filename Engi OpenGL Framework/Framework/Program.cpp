@@ -186,12 +186,15 @@ void Loop()
 void Exit()
 {
     // TODO: Cleanup code here
+
+    // Releasing VRAM
     glDeleteTextures(1, &spaceID);
     glDeleteTextures(1, &sunID);
     glDeleteTextures(1, &mercuryID);
     glDeleteTextures(1, &venusID);
     glDeleteTextures(1, &earthID);
     glDeleteTextures(1, &marsID);
+    // Deleting HIDs
     SafeDelete(kbdc);
     SafeDelete(mc);
     SafeDelete(cam);
