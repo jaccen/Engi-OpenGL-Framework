@@ -24,3 +24,9 @@
 *.ipch
 *.opensdf
 *.suo
+*.db
+*.tlog
+*.idb
+*.pdb
+*.log
+*.ilk

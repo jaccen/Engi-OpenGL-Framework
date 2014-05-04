@@ -116,7 +116,7 @@ void Graphics::BeginFrame()
     // Sets projection matrix to render from vertexes
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(65.0, aspect, 0.01, 1000.0);
+    gluPerspective(65.0, aspect, 0.01, 15000.0);
     //glMatrixMode(GL_MODELVIEW);
     //glLoadIdentity();
 }

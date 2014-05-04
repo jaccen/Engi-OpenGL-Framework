@@ -71,10 +71,34 @@ static std::vector<unsigned> cube_is =
 static float move_speed = 1.0f;
 static float angular_speed = 1.0f;
 static float mouse_sensitivity = 1.0f;
+// Movement controls
 static float r = 0.0;
+static float sphere_rotation = 0.0;
 // Textures
-static unsigned earthID = 0;
+static unsigned spaceID = 0;
 static unsigned sunID = 0;
+static unsigned mercuryID = 0;
+static unsigned venusID = 0;
+static unsigned earthID = 0;
+static unsigned marsID = 0;
+//////////////////////////////////////////////////////////////////////////
+// Planets
+//////////////////////////////////////////////////////////////////////////
+// Sun -- not really a planet.. haha
+static float sun_speed = 2.5f;
+static float sun_distance = 5.0f;
+// Mercury
+static float mercury_speed = 5.0f;
+static float mercury_distance = 100.0f;
+// Venus
+static float venus_speed = 10.0f;
+static float venus_distance = 200.0f;
+// Earth
+static float earth_speed = 3.0f;
+static float earth_distance = 300.0f;
+// Mars
+static float mars_speed = 2.0f;
+static float mars_distance = 400.0f;
 
 void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
 {
@@ -84,11 +108,13 @@ void Init(Graphics *_gfx, KeyboardServer *kbds, MouseServer *ms)
     cam = new Camera();
     // TODO: Initialization code here
 
-    earthID = glLoadTexture(".\\Assets\\Images\\Earth.jpg");
-    sunID = glLoadTexture(".\\Assets\\Images\\Sun.jpg");
+    spaceID   = glLoadTexture(".\\Assets\\Images\\Space.jpg");
+    sunID     = glLoadTexture(".\\Assets\\Images\\Sun.jpg");
+    mercuryID = glLoadTexture(".\\Assets\\Images\\Mercury.jpg");
+    venusID   = glLoadTexture(".\\Assets\\Images\\Venus.jpg");
+    earthID   = glLoadTexture(".\\Assets\\Images\\Earth.jpg");
+    marsID    = glLoadTexture(".\\Assets\\Images\\Mars.jpg");
 }
-
-static float sphere_rotation = 0.0;
 
 void Loop()
 {
@@ -100,59 +126,59 @@ void Loop()
     // y(u, v) = a sqrt(u ^ 2 + 1) sin(v)
     // z(u, v) = c u
 
+    gfx->DrawSurface // Draws the space
+        (
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
+        [](float phi, float theta) -> float { return glm::cos<float>(phi); },
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
+        Matrix::Scale(5000),
+        spaceID, 20
+        );
+
     gfx->DrawSurface // Draws the sun
         (
         [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
         [](float phi, float theta) -> float { return glm::cos<float>(phi); },
         [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
-        Matrix::Scale(40),
+        Matrix::RotateY(sphere_rotation * 5.0f) * Matrix::Scale(40) * Matrix::Translate(sun_distance * glm::cos<float>(sun_speed * sphere_rotation), 0, sun_distance / 1.25f * glm::sin<float>(sun_speed * sphere_rotation)),
         sunID, 20
         );
 
-    gfx->DrawSurface // Draws earth
-    (
+    gfx->DrawSurface // Draws mercury
+        (
         [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
         [](float phi, float theta) -> float { return glm::cos<float>(phi); },
         [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
-        Matrix::RotateY(sphere_rotation * 365.25f) * Matrix::Scale(20)*Matrix::Translate(150, 0, 150) * Matrix::RotateZ(sphere_rotation) * Matrix::RotateX(sphere_rotation),
+        Matrix::RotateY(sphere_rotation * 30.0f) * Matrix::Scale(8.0f) * Matrix::Translate(mercury_distance * glm::cos<float>(mercury_speed * sphere_rotation), 0, mercury_distance / 1.25f * glm::sin<float>(mercury_speed * sphere_rotation)),
+        mercuryID, 20
+        );
+
+    gfx->DrawSurface // Draws venus
+        (
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
+        [](float phi, float theta) -> float { return glm::cos<float>(phi); },
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
+        Matrix::RotateY(sphere_rotation * 80.0f) * Matrix::Scale(12.0f) * Matrix::Translate(venus_distance / 1.25f * glm::cos<float>(venus_speed * sphere_rotation + M_PI / 2.0f), 0, venus_distance * glm::sin<float>(venus_speed * sphere_rotation + M_PI / 2.0f)),
+        venusID, 20
+        );
+
+    gfx->DrawSurface // Draws earth
+        (
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
+        [](float phi, float theta) -> float { return glm::cos<float>(phi); },
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
+        Matrix::RotateY(sphere_rotation * 60.0f) * Matrix::Scale(30.0f) * Matrix::Translate(earth_distance * glm::cos<float>(earth_speed * sphere_rotation + M_PI), 0, earth_distance / 1.25f * glm::sin<float>(earth_speed * sphere_rotation + M_PI)),
         earthID, 20
-    );
+        );
 
-    //gfx->DrawSurface // Hyperboloid
-    //    (
-    //    [](float phi, float theta) -> float { return 1 * glm::sqrt<float>(phi*phi + 1) * glm::cos<float>(theta); },
-    //    [](float phi, float theta) -> float { return 1 * glm::sqrt<float>(phi*phi + 1) * glm::sin<float>(theta); },
-    //    [](float phi, float theta) -> float { return 1 * phi; },
-    //    Matrix::RotateY(r) * Matrix::Scale(5) * Matrix::Translate(0, 40, 0) * Matrix::RotateX(r),
-    //    textureID, 20
-    //    );
-
-    //gfx->DrawSurface // Ellipsoid
-    //    (
-    //    [](float phi, float theta) -> float { return 2 * glm::cos<float>(phi) * glm::sin<float>(theta); },
-    //    [](float phi, float theta) -> float { return 3 * glm::sin<float>(phi) * glm::sin<float>(theta); },
-    //    [](float phi, float theta) -> float { return 4 * glm::cos<float>(theta); },
-    //    Matrix::RotateY(r) * Matrix::Scale(5) * Matrix::Translate(30, 0, 0) * Matrix::RotateY(r),
-    //    textureID, 20
-    //    );
-
-    //gfx->DrawSurface // Draws a 'sky'
-    //    (
-    //    [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
-    //    [](float phi, float theta) -> float { return glm::cos<float>(phi); },
-    //    [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
-    //    Matrix::Scale(100) * Matrix::RotateY(sphere_rotation),
-    //    glm::vec3(1, 0, 0), 20
-    //    );
-
-    //gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateX(r + M_PI / 2) * Matrix::Translate(2.0, 0.0, 0.0));
-    //gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateZ(-r) * Matrix::Translate(0.0, 2.0, 0.0));
-    //gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateX(-r) * Matrix::Translate(2.0, 2.0, 0.0));
-    //gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateY(r) * Matrix::Translate(2.0, 0.0, 2.0));
-    //gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateZ(-r - M_PI / 2) * Matrix::Translate(0.0, 0.0, 2.0));
-    //gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateX(-r) * Matrix::Translate(-2.0, 2.0, 0.0));
-    //gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateY(r) * Matrix::Translate(-2.0, 0.0, 2.0));
-    //gfx->DrawMesh(cube_vs, cube_is, Matrix::RotateZ(-r - M_PI / 2) * Matrix::Translate(-2.0, 2.0, -2.0));
+    gfx->DrawSurface // Draws mars
+        (
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::sin<float>(theta); },
+        [](float phi, float theta) -> float { return glm::cos<float>(phi); },
+        [](float phi, float theta) -> float { return glm::sin<float>(phi) * glm::cos<float>(theta); },
+        Matrix::RotateY(sphere_rotation * 50.0f) * Matrix::Scale(24.0f) * Matrix::Translate(mars_distance / 1.25f * glm::cos<float>(mars_speed * sphere_rotation - M_PI / 4.0f), 0, mars_distance * glm::sin<float>(mars_speed * sphere_rotation - M_PI / 4.0f)),
+        marsID, 20
+        );
 
     gfx->EndFrame();
 }
@@ -160,8 +186,12 @@ void Loop()
 void Exit()
 {
     // TODO: Cleanup code here
-    glDeleteTextures(1, &earthID);
+    glDeleteTextures(1, &spaceID);
     glDeleteTextures(1, &sunID);
+    glDeleteTextures(1, &mercuryID);
+    glDeleteTextures(1, &venusID);
+    glDeleteTextures(1, &earthID);
+    glDeleteTextures(1, &marsID);
     SafeDelete(kbdc);
     SafeDelete(mc);
     SafeDelete(cam);
@@ -186,6 +216,11 @@ void InputProcess()
         cam->RotateZ(angular_speed);
     if (kbdc->IsPressed('E'))
         cam->RotateZ(-angular_speed);
+    // Acceleration
+    if (kbdc->IsPressed('1'))
+        move_speed += .1f;
+    if (kbdc->IsPressed('2'))
+        move_speed -= .1f;
 
     // Request to quit
     if (kbdc->IsPressed(27))
@@ -199,6 +234,6 @@ void UpdateModel()
 {
     r += 0.01f;
     // 1 Hour to orbit around the sun
-    sphere_rotation += (M_PI * 2) / (FPS * 3600);
+    sphere_rotation += (M_PI * 2) / (FPS * 360);
     cam->Render();
 }
