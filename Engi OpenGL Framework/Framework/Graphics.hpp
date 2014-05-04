@@ -27,18 +27,17 @@
 #error Currently, only Windows is supported
 #endif
 
+#include "Math.hpp"
+#include "GlobalVariables.h"
+
 #include "GL\glew.h"
 #include "GL\GL.h"
 #include "GL\GLU.h"
 
-#include "Math.hpp"
-
-#include "GlobalVariables.h"
-
-#include <vector>
-
 #pragma comment(lib, "opengl32.lib")
 #pragma comment(lib, "glu32.lib")
+
+#include <vector>
 
 class Graphics
 {
@@ -76,6 +75,7 @@ public:
     // Draws some shapes for testing purposes
     void Demo();
     // Draws a surface, to do that pass the functions to evaluate each coordinate of the vector separetely (parametrized format)
-    void DrawSurface(float(*para_x)(float,float), float(*para_y)(float,float), float(*para_z)(float,float), glm::mat4 &transform, unsigned quality = 20);
+    void DrawSurface(float(*para_x)(float,float), float(*para_y)(float,float), float(*para_z)(float,float), glm::mat4 &transform, glm::vec3 &color, unsigned quality = 20);
+    void DrawSurface(float(*para_x)(float, float), float(*para_y)(float, float), float(*para_z)(float, float), glm::mat4 &transform, unsigned textureID, unsigned quality = 20);
     //////////////////////////////////////////////////////////////////////////
 };
