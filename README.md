@@ -22,6 +22,9 @@ Engi OpenGL Framework
   - Uses raw input
   - Keyboard with queue and 4 states for each key
   - Mouse with 4 states for each button
+  - Texture loader with UV mapping for math surfaces
 
 <b>Planned features</b><br/>
 - Linux support
+- Physics
+- Gamepad support
