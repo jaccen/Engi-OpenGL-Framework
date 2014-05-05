@@ -279,12 +279,12 @@ HWND InitializeWindow()
 
     Rid[0].usUsagePage = 0x01;
     Rid[0].usUsage = 0x02;
-    Rid[0].dwFlags = RIDEV_NOLEGACY;   // Adds HID mouse and also ignores legacy mouse messages
+    Rid[0].dwFlags = 0;//RIDEV_NOLEGACY;   // Adds HID mouse and also ignores legacy mouse messages if NOLEGACY
     Rid[0].hwndTarget = 0;
 
     Rid[1].usUsagePage = 0x01;
     Rid[1].usUsage = 0x06;
-    Rid[1].dwFlags = RIDEV_NOLEGACY;   // Adds HID keyboard and also ignores legacy keyboard messages
+    Rid[1].dwFlags = 0; //RIDEV_NOLEGACY;   // Adds HID keyboard and also ignores legacy keyboard messages if NOLEGACY
     Rid[1].hwndTarget = 0;
 
     if (RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])) == FALSE)

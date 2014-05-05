@@ -42,8 +42,6 @@
 
 #pragma comment(lib, "opengl32.lib")
 
-#define glLoadTexture(path)(SOIL_load_OGL_texture(path, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y))
-
 #ifdef __cplusplus
 extern "C" {
 #endif

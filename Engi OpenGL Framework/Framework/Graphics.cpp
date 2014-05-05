@@ -21,6 +21,7 @@
 #include "Graphics.hpp"
 #include "Logger.hpp"
 #include "Math.hpp"
+#include "Utility.h"
 
 Graphics::Graphics(HWND hwnd, unsigned width, unsigned height) : width(width), height(height), aspect((float) width / (float) height)
 {
@@ -68,9 +69,11 @@ Graphics::Graphics(HWND hwnd, unsigned width, unsigned height) : width(width), h
     glShadeModel(GL_SMOOTH);                            // Smooth shaders
     glClearDepth(1.0f);                                 // Clear depth
     glEnable(GL_DEPTH_TEST);                            // Enable Z buffer
-    glDepthFunc(GL_LEQUAL);                             // Z buffer behavior
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Correction hint
+
+    glDepthFunc(GL_LEQUAL);                             // Z buffer behavior
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // Alpha blending behavior
+
     glViewport(0, 0, width, height);                    // Viewport settings
 }
 
@@ -129,7 +132,6 @@ void Graphics::EndFrame()
 
 void Graphics::Demo()
 {
-    glDisable(GL_TEXTURE_2D);
     glBegin(GL_TRIANGLES);
     glColor3f(1.0f, 0.0f, 0.0f);
     glVertex2f(+0.0f, +0.5f);
@@ -140,69 +142,39 @@ void Graphics::Demo()
     glEnd();
 }
 
-void Graphics::DrawMesh(const std::vector<glm::vec3> &vertexes, const std::vector<unsigned> &indexes, const glm::mat4 &transform)
+void Graphics::DrawMesh(const std::vector<glm::vec3> &vertexes, const std::vector<unsigned> &indexes, const glm::mat4 &transform, unsigned textureID, GLuint primitive)
 {
-    glDisable(GL_TEXTURE_2D);
-    glBegin(GL_TRIANGLES);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glBegin(primitive);
     int x = 0;
     for (auto itr = indexes.begin(); itr != indexes.end(); itr++)
     {
-        if (x++ % 3 == 0) glColor3f(1.0f, 0.0f, 0.0f);
-        else glColor3f(1.0f, 1.0f, 1.0f);
-        glm::vec4 v = glm::vec4(vertexes.at(*itr), 1) * transform;
+        glm::vec4 v = glm::vec4(vertexes.at(*itr), 1);
+        glm::vec2 uv = glm::vec2(((glm::atan<float>(v.x, v.z) / M_PI) + 1.0f) * 0.5f, 0.5f - glm::asin<float>(v.y) / M_PI);
+        v = v * transform;
+        glTexCoord2f(uv.x, uv.y);
         glVertex3f(v.x, v.y, v.z);
     }
     glEnd();
 }
 
-void Graphics::DrawSurface(float(*para_x)(float, float), float(*para_y)(float, float), float(*para_z)(float, float),
-                           glm::mat4 &transform, glm::vec3 &color, unsigned quality /*= 20*/)
+void Graphics::DrawMesh(const std::vector<glm::vec3> &vertexes, const glm::mat4 &transform, unsigned textureID, GLuint primitive)
 {
-    glm::vec4 eval;
-    eval.w = 1.0f; // Allow this vector to be translated
-    float dtheta = M_PI / quality;
-    float dphi = M_PI / quality;
-
-    glDisable(GL_TEXTURE_2D);
-    glBegin(GL_QUADS);
-    for (float theta = 0; theta <= 2.0*M_PI; theta+=dtheta)
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glBegin(primitive);
+    glm::vec4 last;
+    for (auto itr = vertexes.begin(); itr != vertexes.end(); itr++)
     {
-        for (float phi = 0; phi <= M_PI; phi+=dphi)
-        {
-            // Vertex 01
-            eval.x = para_x(phi + dphi, theta + dtheta);
-            eval.y = para_y(phi + dphi, theta + dtheta);
-            eval.z = para_z(phi + dphi, theta + dtheta);
+        glm::vec2 uv = glm::vec2(((glm::atan<float>(itr->x, itr->z) / M_PI) + 1.0f) * 0.5f, 0.5f - glm::asin<float>(itr->y) / M_PI);
+        glm::vec4 v = glm::vec4(*itr,1.0f) * transform;
 
-            glColor3f(color.x, color.y, color.z);
-            eval = eval * transform;
-            glVertex3f(eval.x, eval.y, eval.z);
+        glTexCoord2f(uv.x, uv.y);
+        if (v.z < 0 && last.x > 0 && v.x < 0)
+            ;// glTexCoord2f(0, 0);
 
-            // Vertex 02
-            eval.x = para_x(phi, theta + dtheta);
-            eval.y = para_y(phi, theta + dtheta);
-            eval.z = para_z(phi, theta + dtheta);
+        glVertex3f(v.x, v.y, v.z);
 
-            glColor3f(0, 0, 0);
-            eval = eval * transform;
-            glVertex3f(eval.x, eval.y, eval.z);
-
-            // Vertex 03
-            eval.x = para_x(phi, theta);
-            eval.y = para_y(phi, theta);
-            eval.z = para_z(phi, theta);
-
-            eval = eval * transform;
-            glVertex3f(eval.x, eval.y, eval.z);
-
-            // Vertex 04
-            eval.x = para_x(phi + dphi, theta);
-            eval.y = para_y(phi + dphi, theta);
-            eval.z = para_z(phi + dphi, theta);
-
-            eval = eval * transform;
-            glVertex3f(eval.x, eval.y, eval.z);
-        }
+        last = v;
     }
     glEnd();
 }
@@ -210,67 +182,149 @@ void Graphics::DrawSurface(float(*para_x)(float, float), float(*para_y)(float, f
 void Graphics::DrawSurface(float(*para_x)(float, float), float(*para_y)(float, float), float(*para_z)(float, float),
                            glm::mat4 &transform, unsigned textureID, unsigned quality /*= 20*/)
 {
+    Graphics::DrawSurface(para_x, para_y, para_z, transform, textureID, glm::vec2(0.0f, 0.0f), glm::vec2(2.0f * M_PI, M_PI), quality);
+}
+
+void Graphics::DrawSurface(float(*para_x)(float, float), float(*para_y)(float, float), float(*para_z)(float, float), glm::mat4 &transform, unsigned textureID, glm::vec2 &start, glm::vec2 &end, unsigned quality /*= 20*/)
+{
     // Untransformed vertexes, stored for UV mapping
-    glm::vec4 v1;
-    glm::vec4 v2;
-    glm::vec4 v3;
-    glm::vec4 v4;
-    // Transformed vertexes
-    glm::vec4 r1;
-    glm::vec4 r2;
-    glm::vec4 r3;
-    glm::vec4 r4;
+    glm::vec4 v;
+    // UV map
+    glm::vec2 u;
     // Allow this vector to be translated
-    v1.w = v2.w = v3.w = v4.w = 1.0f;
+    v.w = 1.0f;
     // Step
     float dt = M_PI / quality;
     float dp = M_PI / quality;
     // Total number of iterations, used for UV mapping, stored as floats because they will be used for math
     float total_iterations = quality * quality * 2;
     float current = 0; // sin(x*pi/(2*k)), [0, k]
-    glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, textureID);
     glBegin(GL_QUADS);
-    for (float theta = 0; theta <= 2.0*M_PI; theta+=dt, current+=quality)
+    for (float theta = start.y; theta <= end.y; theta+=dt, current+=quality)
     {
-        for (float phi = 0; phi <= M_PI; phi+=dp)
+        for (float phi = start.x; phi <= end.x; phi+=dp)
         {
             // Values of the next iteration
             float sum_p = phi + dp;
             float sum_t = theta + dt;
             // Vertex 01
-            v1.x = para_x(sum_p, sum_t);
-            v1.y = para_y(sum_p, sum_t);
-            v1.z = para_z(sum_p, sum_t);
-            r1 = v1 * transform;
+            v.x = para_x(sum_p, sum_t);
+            v.y = para_y(sum_p, sum_t);
+            v.z = para_z(sum_p, sum_t);
+            u.x = (current + quality) / total_iterations;
+            u.y = (v.y + 1.0f) / 2.0f;
+            v = v * transform;
+            glTexCoord2f(u.x, u.y);
+            glVertex3f(v.x, v.y, v.z);
             // Vertex 02
-            v2.x = para_x(phi, sum_t);
-            v2.y = para_y(phi, sum_t);
-            v2.z = para_z(phi, sum_t);
-            r2 = v2 * transform;
+            v.x = para_x(phi, sum_t);
+            v.y = para_y(phi, sum_t);
+            v.z = para_z(phi, sum_t);
+            u.x = (current + quality) / total_iterations;
+            u.y = (v.y + 1.0f) / 2.0f;
+            v = v * transform;
+            glTexCoord2f(u.x, u.y);
+            glVertex3f(v.x, v.y, v.z);
             // Vertex 03
-            v3.x = para_x(phi, theta);
-            v3.y = para_y(phi, theta);
-            v3.z = para_z(phi, theta);
-            r3 = v3 * transform;
+            v.x = para_x(phi, theta);
+            v.y = para_y(phi, theta);
+            v.z = para_z(phi, theta);
+            u.x = current / total_iterations;
+            u.y = (v.y + 1.0f) / 2.0f;
+            v = v * transform;
+            glTexCoord2f(u.x, u.y);
+            glVertex3f(v.x, v.y, v.z);
             // Vertex 04
-            v4.x = para_x(sum_p, theta);
-            v4.y = para_y(sum_p, theta);
-            v4.z = para_z(sum_p, theta);
-            r4 = v4 * transform;
+            v.x = para_x(sum_p, theta);
+            v.y = para_y(sum_p, theta);
+            v.z = para_z(sum_p, theta);
+            u.x = current / total_iterations;
+            u.y = (v.y + 1.0f) / 2.0f;
+            v = v * transform;
+            glTexCoord2f(u.x, u.y);
+            glVertex3f(v.x, v.y, v.z);
 
-            glTexCoord2f((current + quality) / total_iterations, (v1.y + 1.0f) / 2.0f);
-            glVertex3f(r1.x, r1.y, r1.z);
-
-            glTexCoord2f((current + quality) / total_iterations, (v2.y + 1.0f) / 2.0f);
-            glVertex3f(r2.x, r2.y, r2.z);
-
-            glTexCoord2f(current / total_iterations, (v3.y + 1.0f) / 2.0f);
-            glVertex3f(r3.x, r3.y, r3.z);
-
-            glTexCoord2f(current / total_iterations, (v4.y + 1.0f) / 2.0f);
-            glVertex3f(r4.x, r4.y, r4.z);
         }
     }
     glEnd();
+}
+// TODO: move to utilitary class
+void Graphics::Axis(float length)
+{
+    glBegin(GL_LINES);
+    glColor4f(1.0f, 0.0f, 0.0f, 1.0f); // X axis
+    glVertex3f(length, 0.0f, 0.0f);
+    glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
+    glVertex3f(-length, 0.0f, 0.0f);
+    glColor4f(0.0f, 1.0f, 0.0f, 1.0f); // Y axis
+    glVertex3f(0.0f, length, 0.0f);
+    glColor4f(0.0f, 1.0f, 1.0f, 1.0f);
+    glVertex3f(0.0f, -length, 0.0f);
+    glColor4f(0.0f, 0.0f, 1.0f, 1.0f); // Z axis
+    glVertex3f(0.0f, 0.0f, length);
+    glColor4f(1.0f, 0.0f, 1.0f, 1.0f);
+    glVertex3f(0.0f, 0.0f, -length);
+    glColor3f(1, 1, 1);
+    glEnd();
+}
+// TODO: move to utilitary class
+void Graphics::IterateMesh(const std::vector<glm::vec3> &_mesh, unsigned count, unsigned textureID)
+{
+    auto midpoint = [](glm::vec3 &p1, glm::vec3 &p2, glm::vec3 &p3) -> glm::vec3 {
+        return glm::vec3((p1.x + p2.x + p3.x) / 3.0f, (p1.y + p2.y + p3.y) / 3.0f, (p1.z + p2.z + p3.z) / 3.0f);
+    };
+
+    std::vector<glm::vec3> *mesh = new std::vector<glm::vec3>(_mesh);
+
+    while (count-- > 0)
+    {
+        std::vector<glm::vec3> *nmesh = new std::vector<glm::vec3>();
+        for (auto i = 0; i < mesh->size(); i+=3)
+        {
+            glm::vec3 v1 = mesh->at(i);
+            glm::vec3 v2 = mesh->at(i + 1);
+            glm::vec3 v3 = mesh->at(i + 2);
+            glm::vec3 m = midpoint(v1, v2, v3);
+            //float length = glm::length(m);
+            m = glm::normalize(m);// *(1.0f + length) * 0.5f;
+            nmesh->push_back(v1);
+            nmesh->push_back(m);
+            nmesh->push_back(v2);
+            nmesh->push_back(v1);
+            nmesh->push_back(m);
+            nmesh->push_back(v3);
+            nmesh->push_back(v2);
+            nmesh->push_back(m);
+            nmesh->push_back(v3);
+        }
+        SafeDelete(mesh);
+        mesh = std::move(nmesh);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glBegin(GL_TRIANGLES);
+    int k = 0;
+    for (auto itr = mesh->begin(); itr != mesh->end(); itr++)
+    {
+        if (!k)
+        {
+            glTexCoord2f(0.0f, 0.0f);
+            k++;
+        }
+        else if (k % 2)
+        {
+            glTexCoord2f(1.0f, 0.0f);
+            k++;
+        }
+        else
+        {
+            glTexCoord2f(.5f, 1.0f);
+            k = 0;
+        }
+        glVertex3f(itr->x, itr->y, itr->z);
+    }
+    glEnd();
+
+    SafeDelete(mesh);
 }

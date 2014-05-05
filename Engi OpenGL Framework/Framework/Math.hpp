@@ -32,9 +32,22 @@
 #include <vector>
 
 #ifndef M_PI
-#define M_PI 3.141592654
-#define M_PI180 (M_PI / 180)
+#define M_PI 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679
+#define M_PI180 (M_PI / 180.0)
 #endif
+
+namespace Precision
+{
+    template <typename T>
+    static inline T roundif(T value, T limit)
+    {
+        long long v = (value + .5);
+        if (value >= v)
+            return value - v >= limit ? value : v;
+        else
+            return v - value >= limit ? value : v;
+    }
+};
 
 namespace Matrix
 {
@@ -112,18 +125,18 @@ namespace MathFunctions
         return result * radius;
     }
 
-    static glm::vec3 Sphere(float radius, float phi, float theta, glm::vec3 center)
+    template <typename T>
+    inline static T atan2(T y, T x)
     {
-        glm::vec3 result = Sphere(radius, phi, theta);
-        return center - result;
-    }
-
-    static glm::vec3 Garbage(float radius, float phi, float theta)
-    {
-
-        return glm::vec3(glm::sin(theta*theta)*glm::sin(phi),
-                         glm::sin(theta*phi)*glm::sin(theta),
-                         glm::cos(phi));
+        if (x > (T) 0) return glm::atan<float>(y / x);
+        if (x < (T) 0)
+        {
+            if (y >= (T) 0) return glm::atan<float>(y / x) + M_PI;
+            else return glm::atan<float>(y / x) - M_PI;
+        }
+        if (y > (T) 0) return (T) M_PI / (T) 2;
+        if (y > (T) 0) return (T) -M_PI / (T) 2;
+        return NAN;
     }
 };
 
@@ -142,7 +155,7 @@ namespace LinearAlgebra
             v = &glm::vec3(-u.y, u.x, 0);
         else v = &glm::vec3(0, -u.z, u.y);
         glm::vec3 w = glm::cross(u, *v);
-        
+
         return {glm::normalize(u), glm::normalize(*v), glm::normalize(w)};
     }
 };

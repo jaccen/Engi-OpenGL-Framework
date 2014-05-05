@@ -70,12 +70,15 @@ public:
     // Frame control methods
     void BeginFrame();
     void EndFrame();
-    void DrawMesh(const std::vector<glm::vec3> &vertexes, const std::vector<unsigned> &indexes, const glm::mat4 &transform);
+    void DrawMesh(const std::vector<glm::vec3> &vertexes, const glm::mat4 &transform, unsigned textureID, GLuint primitive = GL_TRIANGLES);
+    void DrawMesh(const std::vector<glm::vec3> &vertexes, const std::vector<unsigned> &indexes, const glm::mat4 &transform, unsigned textureID, GLuint primitive = GL_TRIANGLES);
     //////////////////////////////////////////////////////////////////////////
-    // Draws some shapes for testing purposes
+    // Debugging methods
     void Demo();
+    void Axis(float length);
+    void IterateMesh(const std::vector<glm::vec3> &mesh, unsigned count, unsigned textureID);
     // Draws a surface, to do that pass the functions to evaluate each coordinate of the vector separetely (parametrized format)
-    void DrawSurface(float(*para_x)(float,float), float(*para_y)(float,float), float(*para_z)(float,float), glm::mat4 &transform, glm::vec3 &color, unsigned quality = 20);
+    void DrawSurface(float(*para_x)(float, float), float(*para_y)(float, float), float(*para_z)(float, float), glm::mat4 &transform, unsigned textureID, glm::vec2 &start, glm::vec2 &end, unsigned quality = 20);
     void DrawSurface(float(*para_x)(float, float), float(*para_y)(float, float), float(*para_z)(float, float), glm::mat4 &transform, unsigned textureID, unsigned quality = 20);
     //////////////////////////////////////////////////////////////////////////
 };
